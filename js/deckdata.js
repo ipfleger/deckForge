@@ -4,11 +4,49 @@
 (function() {
     'use strict';
 
+    const STORAGE_KEY = 'deckforge_variables';
+
     DeckForge.DeckData = {
         variables: {},          // { varName: [values] }
         count: 0,               // longest variable list
         currentIndex: 0,
         originalTexts: new Map(), // Map<fabric.IText, originalText>
+
+        init: async function() {
+            try {
+                const saved = await localforage.getItem(STORAGE_KEY);
+                if (saved) {
+                    this.variables = saved.variables || {};
+                    this.count = saved.count || 0;
+                }
+                this.renderVariableList();
+                
+                // Show deck nav if we have multi values
+                if (this.count > 1) {
+                    const nav = DeckForge.Utils.getElement('deck-nav');
+                    const btn = DeckForge.Utils.getElement('btn-init-deck');
+                    const ctrls = DeckForge.Utils.getElement('deck-controls');
+                    if (nav) nav.classList.remove('hidden');
+                    if (btn) btn.classList.remove('hidden');
+                    if (ctrls) ctrls.classList.add('hidden');
+                    DeckForge.Utils.setText('deck-total', this.count);
+                }
+            } catch (e) {
+                console.error('Error loading variables:', e);
+                this.renderVariableList();
+            }
+        },
+
+        save: async function() {
+            try {
+                await localforage.setItem(STORAGE_KEY, {
+                    variables: this.variables,
+                    count: this.count
+                });
+            } catch (e) {
+                console.error('Error saving variables:', e);
+            }
+        },
 
         // Add or update a variable list. Accepts ranges "1-10" or comma lists.
         setVariable: function(key, valueString) {
@@ -39,6 +77,7 @@
             }
 
             this.renderVariableList();
+            this.save(); // Persist to localforage
             return true;
         },
 
