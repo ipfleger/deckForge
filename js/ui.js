@@ -1,0 +1,447 @@
+// ========================================
+// UI CONTROLLER & INTERACTION
+// ========================================
+
+(function() {
+    'use strict';
+
+    DeckForge.UI = {
+        init: function() {
+            // Force the viewport to scale from the top-left corner
+            // This is critical for the centering math to work correctly
+            const viewport = DeckForge.Utils.getElement('viewport');
+            if (viewport) {
+                viewport.style.transformOrigin = '0 0';
+                viewport.style.willChange = 'transform';
+            }
+
+            this.setupOverlayListener();
+            this.setupDragHandle();
+            this.setupGestureHandlers();
+            this.setupInputListeners();
+            this.setupMouseZoom();
+            this.setupContextMenu();
+        },
+
+        setupOverlayListener: function() {
+            const overlay = DeckForge.Utils.getElement('overlay');
+            if (overlay) {
+                overlay.addEventListener('click', () => this.closeAllDrawers());
+            }
+        },
+
+        setupDragHandle: function() {
+            const dragHandle = DeckForge.Utils.getElement('drag-handle');
+            if (!dragHandle) return;
+
+            let dragStartY = 0;
+            let isDraggingBar = false;
+            const propBar = DeckForge.Utils.getElement('prop-bar');
+
+            dragHandle.addEventListener('touchstart', (e) => {
+                dragStartY = e.touches[0].clientY;
+                isDraggingBar = true;
+                propBar.classList.add('dragging');
+            }, { passive: false });
+
+            dragHandle.addEventListener('touchmove', (e) => {
+                if (!isDraggingBar) return;
+                const dy = Math.max(0, e.touches[0].clientY - dragStartY);
+                propBar.style.transform = `translateY(${dy}px)`;
+                e.preventDefault();
+            }, { passive: false });
+
+            dragHandle.addEventListener('touchend', (e) => {
+                if (!isDraggingBar) return;
+                isDraggingBar = false;
+                propBar.classList.remove('dragging');
+                
+                if ((e.changedTouches[0].clientY - dragStartY) > 60) {
+                    this.minimizeMenu();
+                } else {
+                    propBar.style.transform = '';
+                }
+            });
+        },
+
+        setupGestureHandlers: function() {
+            const stage = DeckForge.Utils.getElement('stage-container');
+            if (!stage) return;
+
+            let isGesturing = false;
+            let startDist = 0;
+            let startScale = 1;
+            let startPanX = 0;
+            let startPanY = 0;
+            let pinchCenter = { x: 0, y: 0 };
+
+            const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+            
+            const getCenter = (t1, t2) => ({
+                x: (t1.clientX + t2.clientX) / 2,
+                y: (t1.clientY + t2.clientY) / 2
+            });
+
+            stage.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    isGesturing = true;
+                    e.preventDefault(); 
+                    
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    
+                    startDist = getDist(t1, t2);
+                    pinchCenter = getCenter(t1, t2);
+                    
+                    startScale = DeckForge.state.scale;
+                    startPanX = DeckForge.state.panX;
+                    startPanY = DeckForge.state.panY;
+                }
+            }, { passive: false });
+
+            stage.addEventListener('touchmove', (e) => {
+                if (isGesturing && e.touches.length === 2) {
+                    e.preventDefault();
+                    
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    
+                    const curDist = getDist(t1, t2);
+                    const curCenter = getCenter(t1, t2);
+                    
+                    const zoom = curDist / startDist;
+                    let newScale = Math.min(Math.max(startScale * zoom, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
+                    
+                    const dx = curCenter.x - pinchCenter.x;
+                    const dy = curCenter.y - pinchCenter.y;
+                    
+                    // Standard pan-zoom math requires top-left origin
+                    const zsx = (pinchCenter.x - startPanX) * (1 - newScale / startScale);
+                    const zsy = (pinchCenter.y - startPanY) * (1 - newScale / startScale);
+                    
+                    DeckForge.state.panX = startPanX + dx + zsx;
+                    DeckForge.state.panY = startPanY + dy + zsy;
+                    DeckForge.state.scale = newScale;
+                    
+                    requestAnimationFrame(() => this.renderTransform());
+                }
+            }, { passive: false });
+
+            stage.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2) {
+                    isGesturing = false;
+                }
+            });
+        },
+
+        setupMouseZoom: function() {
+            window.addEventListener('wheel', (opt) => {
+                if (opt.ctrlKey) {
+                    opt.preventDefault();
+                    let delta = opt.deltaY;
+                    let zoom = DeckForge.state.scale;
+                    zoom *= 0.999 ** delta;
+                    if (zoom > DeckForge.ZOOM_MAX) zoom = DeckForge.ZOOM_MAX;
+                    if (zoom < DeckForge.ZOOM_MIN) zoom = DeckForge.ZOOM_MIN;
+                    
+                    DeckForge.state.scale = zoom;
+                    this.renderTransform();
+                } else if (!opt.target.closest('.overflow-y-auto')) {
+                    DeckForge.state.panX -= opt.deltaX;
+                    DeckForge.state.panY -= opt.deltaY;
+                    this.renderTransform();
+                }
+            }, { passive: false });
+        },
+
+        setupContextMenu: function() {
+            window.addEventListener('contextmenu', (e) => {
+                if (e.target.tagName === 'CANVAS') {
+                    e.preventDefault();
+                }
+            });
+        },
+
+        setupInputListeners: function() {
+            const bindInput = (id, callback) => {
+                const el = DeckForge.Utils.getElement(id);
+                if (el) el.addEventListener('input', callback);
+            };
+
+            bindInput('inp-size', (e) => DeckForge.Canvas.updateSize(e.target.value));
+            bindInput('inp-stroke', (e) => DeckForge.Canvas.updateProp('strokeWidth', parseInt(e.target.value)));
+            bindInput('inp-radius', (e) => {
+                const val = parseInt(e.target.value);
+                DeckForge.Canvas.updateProp('rx', val);
+                DeckForge.Canvas.updateProp('ry', val);
+            });
+            bindInput('inp-opacity', (e) => DeckForge.Canvas.updateProp('opacity', parseFloat(e.target.value)));
+            bindInput('grad-balance', (e) => DeckForge.Theme.updateGradientBalance(e.target.value));
+            
+            bindInput('inp-pixelate', (e) => DeckForge.Canvas.applyFilter('pixelate', e.target.value));
+            bindInput('inp-blur', (e) => DeckForge.Canvas.applyFilter('blur', e.target.value));
+        },
+
+        renderTransform: function() {
+            const viewport = DeckForge.Utils.getElement('viewport');
+            const zoomLabel = DeckForge.Utils.getElement('zoom-level');
+            
+            if (viewport) {
+                // IMPORTANT: transform-origin MUST be '0 0' (top left) for this translation to work
+                viewport.style.transform = `translate(${DeckForge.state.panX}px, ${DeckForge.state.panY}px) scale(${DeckForge.state.scale})`;
+            }
+            
+            if (zoomLabel) {
+                zoomLabel.innerText = Math.round(DeckForge.state.scale * 100) + '%';
+                zoomLabel.style.opacity = '1';
+                
+                if (window.zoomTimer) clearTimeout(window.zoomTimer);
+                window.zoomTimer = setTimeout(() => {
+                    zoomLabel.style.opacity = '0';
+                }, 1000);
+            }
+        },
+
+        resetView: function() {
+            // Use window dimensions directly for mobile safety
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            
+            // Padding around the card
+            const padding = 20;
+
+            // Calculate scale based on fitting width OR height
+            // We use 750 (Card Width) and 1050 (Card Height)
+            const scaleX = (w - (padding * 2)) / DeckForge.CARD_WIDTH;
+            const scaleY = (h - (padding * 2) - 100) / DeckForge.CARD_HEIGHT; // -100 for top/bottom UI bars
+
+            // Pick the smaller scale so it fits entirely
+            let newScale = Math.min(scaleX, scaleY);
+            
+            // Limit max initial scale
+            newScale = Math.min(newScale, 0.85);
+            // Limit min initial scale
+            newScale = Math.max(newScale, 0.2);
+
+            DeckForge.state.scale = newScale;
+
+            // Center Math:
+            // (Screen Dimension - (Card Dimension * Scale)) / 2
+            DeckForge.state.panX = (w - (DeckForge.CARD_WIDTH * newScale)) / 2;
+            DeckForge.state.panY = (h - (DeckForge.CARD_HEIGHT * newScale)) / 2;
+
+            this.renderTransform();
+        },
+
+        toggleSettings: function() {
+            const drawer = DeckForge.Utils.getElement('settings-drawer');
+            if (!drawer) return;
+
+            if (drawer.classList.contains('translate-x-full')) {
+                this.closeAllDrawers();
+                drawer.classList.remove('translate-x-full');
+                drawer.setAttribute('aria-hidden', 'false');
+                DeckForge.Utils.showOverlay();
+                
+                if (DeckForge.Templates) DeckForge.Templates.loadSaved();
+                if (DeckForge.Theme) DeckForge.Theme.renderSettingsUI();
+                if (DeckForge.DeckData) DeckForge.DeckData.renderUI();
+                
+                if (DeckForge.Theme && typeof DeckForge.Theme.resizePicker === 'function') {
+                    DeckForge.Theme.resizePicker();
+                }
+            } else {
+                this.closeAllDrawers();
+            }
+        },
+
+        openShapesDrawer: function() {
+            const drawer = DeckForge.Utils.getElement('shapes-drawer');
+            if (!drawer) return;
+
+            this.closeAllDrawers();
+            if (DeckForge.GenUI) DeckForge.GenUI.showList();
+            
+            drawer.classList.remove('translate-y-full');
+            drawer.setAttribute('aria-hidden', 'false');
+            DeckForge.Utils.showOverlay();
+        },
+
+        closeAllDrawers: function() {
+            const settingsDrawer = DeckForge.Utils.getElement('settings-drawer');
+            const shapesDrawer = DeckForge.Utils.getElement('shapes-drawer');
+            const layersDrawer = DeckForge.Utils.getElement('layers-drawer');
+            
+            if (settingsDrawer) {
+                settingsDrawer.classList.add('translate-x-full');
+                settingsDrawer.setAttribute('aria-hidden', 'true');
+            }
+            
+            if (shapesDrawer) {
+                shapesDrawer.classList.add('translate-y-full');
+                shapesDrawer.setAttribute('aria-hidden', 'true');
+            }
+
+            if (layersDrawer) {
+                layersDrawer.classList.add('translate-x-full');
+                layersDrawer.setAttribute('aria-hidden', 'true');
+                if (DeckForge.Layers) DeckForge.Layers.isOpen = false;
+            }
+            
+            DeckForge.Utils.hideOverlay();
+        },
+
+        openProperties: function() {
+            const fab = DeckForge.Utils.getElement('btn-open-props');
+            const propBar = DeckForge.Utils.getElement('prop-bar');
+            const mainControls = DeckForge.Utils.getElement('main-controls');
+            
+            if (fab) fab.classList.add('scale-0');
+            if (propBar) {
+                propBar.classList.remove('translate-y-[120%]');
+                propBar.style.transform = '';
+            }
+            if (mainControls) mainControls.classList.add('translate-y-24');
+        },
+
+        minimizeMenu: function() {
+            const fab = DeckForge.Utils.getElement('btn-open-props');
+            const propBar = DeckForge.Utils.getElement('prop-bar');
+            const mainControls = DeckForge.Utils.getElement('main-controls');
+            
+            if (fab) fab.classList.remove('scale-0');
+            if (propBar) {
+                propBar.classList.add('translate-y-[120%]');
+                propBar.style.transform = '';
+            }
+            if (mainControls) mainControls.classList.remove('translate-y-24');
+        },
+
+        setPropTab: function(tabName) {
+            ['color', 'shape', 'fx'].forEach(t => {
+                const content = DeckForge.Utils.getElement(`tab-${t}`);
+                const btn = DeckForge.Utils.getElement(`tab-btn-${t}`);
+                
+                if (content) content.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('text-blue-600', 'border-blue-600');
+                    btn.classList.add('text-gray-400', 'border-transparent');
+                    btn.setAttribute('aria-selected', 'false');
+                }
+            });
+
+            const activeContent = DeckForge.Utils.getElement(`tab-${tabName}`);
+            const activeBtn = DeckForge.Utils.getElement(`tab-btn-${tabName}`);
+            
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.remove('text-gray-400', 'border-transparent');
+                activeBtn.classList.add('text-blue-600', 'border-blue-600');
+                activeBtn.setAttribute('aria-selected', 'true');
+            }
+        },
+
+        setEditMode: function(mode) {
+            DeckForge.state.editMode = mode;
+            
+            const fillBtn = DeckForge.Utils.getElement('mode-fill');
+            const strokeBtn = DeckForge.Utils.getElement('mode-stroke');
+            
+            const activeClass = "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-white shadow-sm text-blue-600 transition";
+            const inactiveClass = "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide text-gray-400 hover:text-gray-600 transition";
+
+            if (mode === 'fill') {
+                if (fillBtn) { fillBtn.className = activeClass; fillBtn.setAttribute('aria-pressed', 'true'); }
+                if (strokeBtn) { strokeBtn.className = inactiveClass; strokeBtn.setAttribute('aria-pressed', 'false'); }
+            } else {
+                if (strokeBtn) { strokeBtn.className = activeClass; strokeBtn.setAttribute('aria-pressed', 'true'); }
+                if (fillBtn) { fillBtn.className = inactiveClass; fillBtn.setAttribute('aria-pressed', 'false'); }
+            }
+            
+            if (DeckForge.Theme) DeckForge.Theme.renderPaletteUI();
+        },
+
+        updateContextualUI: function(obj) {
+            if (!obj) return;
+
+            const elEditText = DeckForge.Utils.getElement('btn-edit-text');
+            const elRadius = DeckForge.Utils.getElement('group-radius');
+            const elFilters = DeckForge.Utils.getElement('image-filters');
+            const elFillBtn = DeckForge.Utils.getElement('mode-fill');
+            const lblSizeTitle = DeckForge.Utils.getElement('lbl-size-title');
+
+            if (elEditText) elEditText.classList.add('hidden');
+            if (elRadius) elRadius.classList.add('hidden');
+            if (elFilters) elFilters.classList.add('hidden');
+            if (elFillBtn) elFillBtn.classList.remove('hidden');
+
+            switch (obj.type) {
+                case 'i-text':
+                    if (elEditText) elEditText.classList.remove('hidden');
+                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-text-aa"></i> Font Size';
+                    break;
+
+                case 'image':
+                    if (elFilters) elFilters.classList.remove('hidden');
+                    if (elFillBtn) elFillBtn.classList.add('hidden');
+                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Scale';
+                    break;
+
+                case 'rect':
+                    if (elRadius) elRadius.classList.remove('hidden');
+                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Size';
+                    break;
+
+                default:
+                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Scale';
+                    break;
+            }
+        },
+
+        updateLockUI: function(isLocked) {
+            const btn = DeckForge.Utils.getElement('btn-lock');
+            const overlay = DeckForge.Utils.getElement('lock-overlay');
+            const deleteBtn = DeckForge.Utils.getElement('btn-delete');
+            const layerUp = DeckForge.Utils.getElement('btn-layer-up');
+            const layerDown = DeckForge.Utils.getElement('btn-layer-down');
+
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+
+            if (isLocked) {
+                if (icon) icon.className = "ph-fill ph-lock-key text-orange-500 text-xl";
+                btn.setAttribute('aria-pressed', 'true');
+                if (overlay) overlay.classList.remove('hidden');
+                
+                [deleteBtn, layerUp, layerDown].forEach(b => {
+                    if (b) { b.disabled = true; b.classList.add('opacity-30'); }
+                });
+            } else {
+                if (icon) icon.className = "ph-bold ph-lock-open text-gray-400 text-xl";
+                btn.setAttribute('aria-pressed', 'false');
+                if (overlay) overlay.classList.add('hidden');
+
+                [deleteBtn, layerUp, layerDown].forEach(b => {
+                    if (b) { b.disabled = false; b.classList.remove('opacity-30'); }
+                });
+            }
+        },
+
+        toggleGuides: function() {
+            const guides = DeckForge.Utils.getElement('print-guides');
+            const btn = DeckForge.Utils.getElement('btn-guides');
+            
+            if (!guides || !btn) return;
+            
+            if (guides.style.display === 'block') {
+                guides.style.display = 'none';
+                btn.classList.remove('text-blue-600', 'bg-blue-50');
+                btn.setAttribute('aria-pressed', 'false');
+            } else {
+                guides.style.display = 'block';
+                btn.classList.add('text-blue-600', 'bg-blue-50');
+                btn.setAttribute('aria-pressed', 'true');
+            }
+        }
+    };
+})();
