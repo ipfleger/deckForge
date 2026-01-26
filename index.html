@@ -896,7 +896,44 @@
             </div>
         </div>
     </div>
-    
+    <!-- SVG Import Modal -->
+<div id="svg-modal" 
+     class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-6"
+     role="dialog"
+     aria-labelledby="svg-modal-title"
+     aria-modal="true">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="svg-modal-title" class="text-lg font-bold text-gray-800">
+                <i class="ph-bold ph-vector-three text-pink-500 mr-2"></i>Import SVG
+            </h3>
+            <button onclick="DeckForge.SVG.closeModal()" 
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 transition"
+                    aria-label="Close modal">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
+        </div>
+        
+        <p class="text-xs text-gray-500 mb-3">Paste your SVG code below. Colors will automatically map to your current theme.</p>
+        
+        <label for="svg-input" class="sr-only">SVG Code</label>
+        <textarea id="svg-input" 
+                  rows="8" 
+                  class="w-full border border-gray-200 rounded-xl p-4 text-xs font-mono focus:border-blue-500 focus:outline-none resize-none bg-gray-50"
+                  placeholder="<svg>...</svg>"></textarea>
+        
+        <div class="flex gap-3 mt-4">
+            <button onclick="DeckForge.SVG.closeModal()" 
+                    class="flex-1 py-2.5 bg-gray-100 text-gray-600 font-bold text-xs uppercase rounded-lg hover:bg-gray-200 transition">
+                Cancel
+            </button>
+            <button onclick="DeckForge.SVG.confirmAdd()" 
+                    class="flex-1 py-2.5 bg-pink-600 text-white font-bold text-xs uppercase rounded-lg hover:bg-pink-700 transition shadow-md">
+                Import SVG
+            </button>
+        </div>
+    </div>
+</div>
     <div id="export-modal" 
          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-6"
          role="dialog"
