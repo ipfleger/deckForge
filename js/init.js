@@ -31,6 +31,7 @@
         if (DeckForge.GenUI) DeckForge.GenUI.init();
         if (DeckForge.Templates) DeckForge.Templates.init();
         if (DeckForge.DeckData) DeckForge.DeckData.init();
+        if (DeckForge.Fonts) DeckForge.Fonts.init();
         
         // 5. Init Theme Engine (Color System)
         if (DeckForge.Theme) {
