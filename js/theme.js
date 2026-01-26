@@ -122,7 +122,7 @@
         selectPalette: function(colors) {
             DeckForge.state.palette = colors;
             if (DeckForge.state.coordinatedColors) this.updateCanvasColors();
-            this.renderPaletteUI();
+            this.eUI();
             DeckForge.History.save();
         },
 
@@ -142,26 +142,29 @@
         },
 
         renderPaletteUI: function() {
-            const row = DeckForge.Utils.getElement('active-palette-row');
-            if (!row) return;
-            row.innerHTML = '';
-            
-            const obj = DeckForge.canvas ? DeckForge.canvas.getActiveObject() : null;
-            const currentRole = obj ? (DeckForge.state.editMode === 'fill' ? obj.roleFill : obj.roleStroke) : -99;
+    const row = DeckForge.Utils.getElement('active-palette-row');
+    if (!row) return;
+    row.innerHTML = '';
+    
+    const obj = DeckForge.canvas ? DeckForge.canvas.getActiveObject() : null;
+    const currentRole = obj ? (DeckForge.state.editMode === 'fill' ? obj.roleFill : obj.roleStroke) : -99;
 
-            const transparentBtn = document.createElement('button');
-            transparentBtn.className = `swatch bg-checkers ${currentRole === -1 ? 'active-role' : ''}`;
-            transparentBtn.onclick = () => this.assignRole(-1);
-            row.appendChild(transparentBtn);
+    // Transparent swatch
+    const transparentBtn = document.createElement('button');
+    transparentBtn.className = `swatch bg-checkers ${currentRole === -1 ? 'active-role' : ''}`;
+    transparentBtn.onclick = () => this.assignRole(-1);
+    row.appendChild(transparentBtn);
 
-            [0, 1, 2, 3, 4].forEach(i => {
-                const swatch = document.createElement('button');
-                swatch.className = `swatch ${currentRole === i ? 'active-role' : ''}`;
-                swatch.style.backgroundColor = DeckForge.Utils.getPaletteColor(i);
-                swatch.onclick = () => this.assignRole(i);
-                row.appendChild(swatch);
-            });
-        },
+    // Color swatches - dynamically based on palette length
+    const paletteSize = DeckForge.state.palette.length;
+    for (let i = 0; i < paletteSize; i++) {
+        const swatch = document.createElement('button');
+        swatch.className = `swatch ${currentRole === i ? 'active-role' : ''}`;
+        swatch.style.backgroundColor = DeckForge.Utils.getPaletteColor(i);
+        swatch.onclick = () => this.assignRole(i);
+        row.appendChild(swatch);
+    }
+},
 
         assignRole: function(idx) {
             const obj = DeckForge.canvas.getActiveObject();
