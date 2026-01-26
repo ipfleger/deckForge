@@ -6,7 +6,7 @@
     'use strict';
 
     let colorPickerInstance = null;
-    let builderPalette = ['#ffffff', '#e2e8f0', '#3b82f6', '#1d4ed8', '#0f172a'];
+    let builderPalette = ['#ffffff', '#f1f5f9', '#e2e8f0', '#94a3b8', '#3b82f6', '#2563eb', '#1d4ed8', '#0f172a'];
     let activeBuilderSlot = 2;
 
     DeckForge.Theme = {
@@ -77,34 +77,36 @@
         },
 
         generateHarmony: function(mode) {
-            if (typeof chroma === 'undefined') return;
-            const base = colorPickerInstance.color.hexString;
-            let newColors = [];
-            
-            if (mode === 'scale') {
-                newColors = chroma.scale([chroma(base).brighten(2.5), base, chroma(base).darken(2.5)]).mode('lch').colors(5);
-            } else if (mode === 'contrast') {
-                newColors = ['#ffffff', '#f3f4f6', base, chroma(base).darken(1.5).hex(), chroma(base).darken(3.5).hex()];
-            }
-            
-            builderPalette = newColors;
-            activeBuilderSlot = 2;
-            colorPickerInstance.color.set(builderPalette[2]);
-            this.renderBuilderSlots();
-        },
-
-        saveCustomPalette: function() {
-            const name = DeckForge.Utils.getElement('new-palette-name')?.value || 'Custom Theme';
-            const palette = { id: 'c-' + Date.now(), name: name, colors: [...builderPalette] };
-            DeckForge.state.palettes.push(palette);
-            try {
-                localStorage.setItem('deckforge_custom_palettes', JSON.stringify(DeckForge.state.palettes.filter(p => p.id.startsWith('c-'))));
-                this.renderSettingsUI();
-                this.selectPalette(palette.colors);
-            } catch (e) {
-                alert("Storage Full: Cannot save theme.");
-            }
-        },
+    if (typeof chroma === 'undefined') return;
+    const base = colorPickerInstance.color.hexString;
+    let newColors = [];
+    
+    if (mode === 'scale') {
+        newColors = chroma.scale([
+            chroma(base).brighten(3),
+            chroma(base).brighten(1.5),
+            base,
+            chroma(base).darken(1.5),
+            chroma(base).darken(3)
+        ]).mode('lch').colors(8);
+    } else if (mode === 'contrast') {
+        newColors = [
+            '#ffffff',
+            '#f8fafc',
+            '#f1f5f9',
+            '#e2e8f0',
+            base,
+            chroma(base).darken(1).hex(),
+            chroma(base).darken(2).hex(),
+            chroma(base).darken(3.5).hex()
+        ];
+    }
+    
+    builderPalette = newColors;
+    activeBuilderSlot = 4; // Middle slot
+    colorPickerInstance.color.set(builderPalette[4]);
+    this.renderBuilderSlots();
+},
 
         loadCustomPalettes: function() {
             try {
