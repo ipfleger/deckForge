@@ -10,7 +10,7 @@
 
         // 1. Init Canvas (Model) - CRITICAL: MUST BE FIRST
         if (DeckForge.Canvas) {
-            DeckForge.Canvas.init();
+            DeckForge.Canvas.();
         } else {
             console.error("DeckForge.Canvas module is missing!");
             return;
@@ -32,6 +32,7 @@
         if (DeckForge.Templates) DeckForge.Templates.init();
         if (DeckForge.DeckData) DeckForge.DeckData.init();
         if (DeckForge.Fonts) DeckForge.Fonts.init();
+        if (DeckForge.Clipboard) DeckForge.Clipboard.init();
         
         // 5. Init Theme Engine (Color System)
         if (DeckForge.Theme) {
