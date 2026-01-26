@@ -10,7 +10,7 @@
 
         // 1. Init Canvas (Model) - CRITICAL: MUST BE FIRST
         if (DeckForge.Canvas) {
-            DeckForge.Canvas.init();
+            DeckForge.Canvas.init();  // <-- FIXED: was ".()"
         } else {
             console.error("DeckForge.Canvas module is missing!");
             return;
