@@ -79,10 +79,6 @@
                 DeckForge.UI.setPropTab('color');
                 DeckForge.UI.updateContextualUI(obj);
                 DeckForge.UI.updateLockUI(obj.locked);
-                // Update typography UI for text objects
-                if (obj.type === 'i-text' && DeckForge.Text) {
-                    DeckForge.Text.updateTypographyUI(obj);
-                }
                 if (DeckForge.Theme) DeckForge.Theme.updateGradientUI(obj);
 
                 DeckForge.Utils.setInputValue('inp-opacity', obj.opacity || 1);
@@ -129,7 +125,7 @@
             const centerNum = new fabric.IText('3', {
                 left: DeckForge.CARD_WIDTH / 2,
                 top: DeckForge.CARD_HEIGHT / 2,
-                fontFamily: 'lost_mono',
+                fontFamily: 'Inter',
                 fontSize: 400,
                 fontWeight: 'bold',
                 fill: DeckForge.state.palette[4],
@@ -226,27 +222,24 @@
         },
 
         addText: function() {
-    // Ensure font is loaded before creating text
-    document.fonts.ready.then(() => {
-        const text = new fabric.IText('New Text', {
-            left: DeckForge.CARD_WIDTH / 2,
-            top: DeckForge.CARD_HEIGHT / 2,
-            originX: 'center',
-            originY: 'center',
-            fontFamily: 'lost_mono',
-            fontSize: 60,
-            editable: true
-        });
-        
-        text.roleFill = 4;
-        text.roleStroke = -1;
-        text.set('fill', DeckForge.Utils.getPaletteColor(4));
-        
-        DeckForge.canvas.add(text);
-        DeckForge.canvas.setActiveObject(text);
-        this.autoPanToSelection();
-    });
-},
+            const text = new fabric.IText('New Text', {
+                left: DeckForge.CARD_WIDTH / 2,
+                top: DeckForge.CARD_HEIGHT / 2,
+                originX: 'center',
+                originY: 'center',
+                fontFamily: 'Inter',
+                fontSize: 60,
+                editable: true
+            });
+            
+            text.roleFill = 4;
+            text.roleStroke = -1;
+            text.set('fill', DeckForge.Utils.getPaletteColor(4));
+            
+            DeckForge.canvas.add(text);
+            DeckForge.canvas.setActiveObject(text);
+            this.autoPanToSelection();
+        },
 
         autoPanToSelection: function() {
             DeckForge.state.panY -= 150 * DeckForge.state.scale;
