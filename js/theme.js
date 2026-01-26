@@ -59,7 +59,7 @@
             
             builderPalette.forEach((color, index) => {
                 const btn = document.createElement('button');
-                btn.className = "w-9 h-9 rounded-lg cursor-pointer transition shadow-sm border relative";
+                btn.className = "w-7 h-7 rounded-lg cursor-pointer transition shadow-sm border relative";
                 btn.style.backgroundColor = color;
                 if (index === activeBuilderSlot) {
                     btn.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
