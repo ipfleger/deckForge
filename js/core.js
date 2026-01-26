@@ -25,12 +25,12 @@ window.DeckForge = window.DeckForge || {};
     ];
 
     DeckForge.DEFAULT_PALETTES = [
-        { id:'corporate', name:'Breach', colors:['#ddfff7', '#93e1d8', '#ffa69e', '#aa4465', '#191919'] },
-        { id:'sunset', name:'Sunset', colors:['#fff7ed', '#fed7aa', '#f97316', '#c2410c', '#431407'] },
-        { id:'forest', name:'Forest', colors:['#f0fdf4', '#bbf7d0', '#22c55e', '#15803d', '#052e16'] },
-        { id:'berry', name:'Berry', colors:['#fdf2f8', '#fbcfe8', '#ec4899', '#be185d', '#831843'] },
-        { id:'cyber', name:'Cyber', colors:['#f0f9ff', '#22d3ee', '#0ea5e9', '#6366f1', '#1e1b4b'] },
-        { id:'mono', name:'Monochrome', colors:['#ffffff', '#e5e5e5', '#a3a3a3', '#525252', '#171717'] }
+        { id:'corporate', name:'Breach', colors:['#ddfff7', '#93e1d8', '#ffa69e', '#aa4465', '#191919', '#5c2d4f', '#f0a6ca', '#b8e0d2'] },
+        { id:'sunset', name:'Sunset', colors:['#fff7ed', '#fed7aa', '#fdba74', '#f97316', '#ea580c', '#c2410c', '#9a3412', '#431407'] },
+        { id:'forest', name:'Forest', colors:['#f0fdf4', '#dcfce7', '#bbf7d0', '#86efac', '#22c55e', '#15803d', '#166534', '#052e16'] },
+        { id:'berry', name:'Berry', colors:['#fdf2f8', '#fce7f3', '#fbcfe8', '#f9a8d4', '#ec4899', '#db2777', '#be185d', '#831843'] },
+        { id:'cyber', name:'Cyber', colors:['#f0f9ff', '#e0f2fe', '#22d3ee', '#0ea5e9', '#0284c7', '#6366f1', '#4f46e5', '#1e1b4b'] },
+        { id:'mono', name:'Monochrome', colors:['#ffffff', '#f5f5f5', '#e5e5e5', '#d4d4d4', '#a3a3a3', '#737373', '#525252', '#171717'] }
     ];
 
     DeckForge.FONT_OPTIONS = [
