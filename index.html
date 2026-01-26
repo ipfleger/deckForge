@@ -7,7 +7,8 @@
     <meta name="description" content="DeckForge V18:Refactored Edition">
     <title>DeckForge</title>
     
-    <!-- External Libraries -->
+    <link rel="stylesheet" href="style.css">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -18,23 +19,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bangers&family=Chakra+Petch:wght@400;700&family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:wght@400;700&family=Courier+Prime&family=Crimson+Text:wght@400;700&family=Dancing+Script:wght@700&family=Georama:wght@400;700;900&family=Inter:wght@400;500;700;900&family=Lato:wght@400;700&family=Lobster&family=Merriweather:wght@300;400;700;900&family=Michroma&family=Monoton&family=Montserrat:wght@400;700;900&family=Nunito:wght@400;700&family=Open+Sans:wght@400;700&family=Orbitron:wght@400;700;900&family=Oswald:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;700&family=Quicksand:wght@400;700&family=Rajdhani:wght@400;700&family=Raleway:wght@400;700&family=Roboto:wght@300;400;500;700;900&family=Rubik:wght@400;700&family=Ubuntu:wght@400;700&display=swap" rel="stylesheet">
-
 </head>
 <body class="bg-gray-100 text-gray-800">
-    <!-- Skip Link for Accessibility -->
     <a href="#stage-container" class="skip-link">Skip to Canvas</a>
 
-    <!-- Overlay for Drawers -->
     <div id="overlay" 
          role="presentation"
          class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] hidden opacity-0 transition-opacity duration-300"
          aria-hidden="true"></div>
 
-    <!-- Header -->
     <header class="fixed top-0 left-0 w-full h-14 bg-white/90 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 z-50 shadow-sm" role="banner">
         <div class="flex items-center gap-3 active:opacity-60 transition cursor-pointer group" 
              role="button"
@@ -91,7 +87,6 @@
         </nav>
     </header>
 
-    <!-- Deck Navigation -->
     <div id="deck-nav" 
          class="fixed top-16 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur shadow-lg border border-gray-200 rounded-full px-1 py-1 pl-3 flex items-center gap-3 z-40 hidden transition-transform duration-300"
          role="navigation"
@@ -121,21 +116,18 @@
         </div>
     </div>
 
-    <!-- Dark Mode Toggle -->
     <button onclick="DeckForge.Theme.toggleDarkMode()" 
             id="btn-dark-mode" 
-            class="fixed top-20 right-4 w-11 h-11 bg-gray-900 text-white rounded-full shadow-xl flex items-center justify-center z-50 active:scale-90 transition border-2 border-white hover:shadow-2xl"
+            class="fixed top-20 right-4 w-11 h-11 bg-gray-900 text-white rounded-full shadow-xl flex items-center justify-center z-50 active:scale-90 transition border-2 border-white"
             aria-label="Toggle dark mode"
             aria-pressed="false">
         <i class="ph-fill ph-moon text-lg" id="icon-dark-mode" aria-hidden="true"></i>
     </button>
 
-    <!-- Main Canvas Stage -->
     <main id="stage-container" role="application" aria-label="Card design canvas">
         <div id="viewport">
             <canvas id="c" aria-label="Design canvas"></canvas>
             
-            <!-- Print Guides -->
             <div id="print-guides" aria-hidden="true">
                 <div class="guide-grid"></div>
                 <div class="guide-cut" style="top:37px; left:37px; right:37px; bottom:37px;">
@@ -147,7 +139,6 @@
             </div>
         </div>
         
-        <!-- Zoom Level Indicator -->
         <div id="zoom-level" 
              class="absolute top-24 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur text-white px-4 py-1.5 rounded-full text-xs font-mono font-bold tracking-widest opacity-0 transition-opacity duration-300 pointer-events-none z-40 shadow-xl border border-white/10"
              aria-live="polite"
@@ -156,7 +147,6 @@
         </div>
     </main>
 
-    <!-- Settings/Library Drawer -->
     <div id="settings-drawer" 
          class="fixed inset-y-0 right-0 w-80 bg-white z-[60] transform translate-x-full transition-transform duration-300 flex flex-col drawer-shadow border-l border-gray-200"
          role="dialog"
@@ -174,7 +164,23 @@
         </div>
         <div class="flex-1 overflow-y-auto p-5 space-y-8">
             
-            <!-- Saved Designs Section -->
+            <section class="space-y-3" aria-labelledby="assets-heading">
+                <h3 id="assets-heading" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">My Assets</h3>
+                <div class="flex items-center gap-2">
+                    <input id="asset-filter" type="text" placeholder="Filter assets..."
+                           class="flex-1 text-xs p-2 border rounded"
+                           oninput="DeckForge.Assets.setFilter(this.value)">
+                    <button onclick="DeckForge.Assets.triggerUpload()"
+                            class="px-3 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg shadow-sm hover:bg-blue-700 active:scale-95">
+                        + ADD ASSET
+                    </button>
+                </div>
+                <div class="text-[10px] text-gray-400 mb-2">Uploads are stored locally on this device.</div>
+                <div id="asset-list-ui" class="flex flex-col gap-2" role="list" aria-label="User assets"></div>
+            </section>
+
+            <hr class="border-gray-100">
+
             <section class="space-y-3" aria-labelledby="designs-heading">
                 <div class="flex justify-between items-center">
                     <h3 id="designs-heading" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Your Designs</h3>
@@ -188,7 +194,6 @@
             
             <hr class="border-gray-100">
 
-            <!-- Card Decks Section -->
             <section class="space-y-3" aria-labelledby="decks-heading">
                 <div class="flex justify-between items-center">
                     <h3 id="decks-heading" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Card Decks</h3>
@@ -213,7 +218,6 @@
 
             <hr class="border-gray-100">
 
-            <!-- Deck Data/Variables Section -->
             <section class="space-y-3" aria-labelledby="variables-heading">
                 <div class="flex justify-between items-center">
                     <h3 id="variables-heading" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Deck Data</h3>
@@ -228,12 +232,10 @@
 
             <hr class="border-gray-100">
             
-            <!-- Color Palettes Section -->
             <section aria-labelledby="palettes-heading">
                 <h3 id="palettes-heading" class="text-[10px] font-bold text-gray-400 uppercase mb-4 tracking-widest">Color Systems</h3>
                 <div id="palette-list" class="grid grid-cols-1 gap-2 mb-6" role="list" aria-label="Color palettes"></div>
                 
-                <!-- Custom Theme Builder -->
                 <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-inner">
                     <h4 class="text-xs font-bold text-gray-800 uppercase mb-3 flex items-center gap-2">
                         <i class="ph-bold ph-palette text-purple-500" aria-hidden="true"></i> Custom Theme
@@ -247,20 +249,17 @@
                 
                     <div class="flex justify-between gap-2 mb-4" id="builder-slots" role="group" aria-label="Theme color slots"></div>
                 
-                <div class="flex justify-center bg-white rounded-xl border border-gray-200 py-4 mb-4 shadow-sm flex-col items-center">
-    
-    <div id="iro-picker" aria-label="Color picker"></div>
-    
-    <div class="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 w-full px-4">
-        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">HEX</span>
-        <input type="text" 
-               id="hex-input" 
-               class="flex-1 font-mono text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded p-1.5 focus:border-blue-500 focus:bg-white outline-none uppercase"
-               placeholder="#FFFFFF"
-               maxlength="7">
-    </div>
-
-</div>
+                    <div class="flex justify-center bg-white rounded-xl border border-gray-200 py-4 mb-4 shadow-sm flex-col items-center">
+                        <div id="iro-picker" aria-label="Color picker"></div>
+                        <div class="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3 w-full px-4">
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">HEX</span>
+                            <input type="text" 
+                                id="hex-input" 
+                                class="flex-1 font-mono text-xs font-bold text-gray-600 bg-gray-50 border border-gray-200 rounded p-1.5 focus:border-blue-500 focus:bg-white outline-none uppercase"
+                                placeholder="#FFFFFF"
+                                maxlength="7">
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-2 gap-2 mb-4">
                         <button onclick="DeckForge.Theme.generateHarmony('scale')" 
@@ -280,7 +279,6 @@
                 </div>
             </section>
             
-            <!-- Settings Section -->
             <section class="space-y-4 pt-2 border-t border-gray-100">
                 <div class="flex items-center justify-between p-1">
                     <div class="flex flex-col">
@@ -308,22 +306,21 @@
      aria-labelledby="layers-title"
      aria-hidden="true">
     
-    <div class="h-14 border-b flex items-center justify-between px-5 shrink-0 bg-gray-50/80 backdrop-blur">
-        <h2 id="layers-title" class="font-bold text-base text-gray-800 flex items-center gap-2">
-            <i class="ph-bold ph-stack text-blue-600" aria-hidden="true"></i> Layers
-        </h2>
-        <button onclick="DeckForge.Layers.toggle()" 
-                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition"
-                aria-label="Close layers">
-            <i class="ph-bold ph-x text-lg" aria-hidden="true"></i>
-        </button>
+        <div class="h-14 border-b flex items-center justify-between px-5 shrink-0 bg-gray-50/80 backdrop-blur">
+            <h2 id="layers-title" class="font-bold text-base text-gray-800 flex items-center gap-2">
+                <i class="ph-bold ph-stack text-blue-600" aria-hidden="true"></i> Layers
+            </h2>
+            <button onclick="DeckForge.Layers.toggle()" 
+                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500 transition"
+                    aria-label="Close layers">
+                <i class="ph-bold ph-x text-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div id="layers-list" class="flex-1 overflow-y-auto p-2 space-y-1 bg-gray-50/50">
+        </div>
     </div>
 
-    <div id="layers-list" class="flex-1 overflow-y-auto p-2 space-y-1 bg-gray-50/50">
-        </div>
-</div>
-
-    <!-- Shapes/Generator Drawer -->
     <div id="shapes-drawer" 
          class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.15)] transform translate-y-full z-40 rounded-t-3xl border-t border-gray-100 pb-10 transition-transform duration-300 flex flex-col max-h-[60vh]"
          role="dialog"
@@ -350,7 +347,6 @@
         <div id="gen-content" class="p-6 overflow-y-auto"></div>
     </div>
 
-    <!-- Edit Properties FAB -->
     <button id="btn-open-props" 
             onclick="DeckForge.UI.openProperties()" 
             class="fixed bottom-24 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl shadow-blue-600/40 z-[39] flex items-center justify-center transform transition-all duration-300 scale-0 active:scale-90 hover:bg-blue-700 hover:scale-105 border-2 border-white"
@@ -358,13 +354,11 @@
         <i class="ph-bold ph-pencil-simple text-2xl" aria-hidden="true"></i>
     </button>
 
-    <!-- Property Bar -->
     <div id="prop-bar" 
          class="fixed bottom-0 left-0 w-full bg-white shadow-[0_-10px_40px_rgba(0,0,0,0.1)] transform translate-y-[120%] z-40 rounded-t-3xl border-t border-gray-100 touch-pan-y flex flex-col max-h-[50vh]"
          role="dialog"
          aria-label="Object properties">
         
-        <!-- Drag Handle -->
         <div id="drag-handle" 
              class="w-full flex flex-col items-center cursor-grab touch-none active:cursor-grabbing pt-2 pb-1 shrink-0 z-10 bg-white rounded-t-3xl"
              role="slider"
@@ -430,7 +424,6 @@
             </div>
         </div>
 
-        <!-- Edit Text Button -->
         <div id="btn-edit-text" class="hidden px-4 py-2 bg-white shrink-0 border-b border-gray-100 animate-fade-in">
             <button onclick="DeckForge.Text.openEditor()" 
                     class="w-full py-2.5 bg-blue-50 text-blue-600 font-bold rounded-xl border border-blue-100 active:scale-95 transition flex items-center justify-center text-sm shadow-sm">
@@ -438,7 +431,6 @@
             </button>
         </div>
 
-        <!-- Tab Navigation -->
         <div class="flex px-4 border-b border-gray-100 bg-gray-50/50 shrink-0" role="tablist" aria-label="Property tabs">
             <button onclick="DeckForge.UI.setPropTab('color')" 
                     id="tab-btn-color" 
@@ -466,17 +458,14 @@
             </button>
         </div>
         
-        <!-- Tab Content -->
         <div class="p-5 overflow-y-auto relative bg-white">
             
-            <!-- Lock Overlay -->
             <div id="lock-overlay" class="absolute inset-0 bg-white/80 z-50 hidden flex items-center justify-center backdrop-blur-[1px]">
                 <span class="text-xs font-bold text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm border flex items-center gap-2">
                     <i class="ph-fill ph-lock-key" aria-hidden="true"></i> Element Locked
                 </span>
             </div>
 
-            <!-- Color Tab -->
             <div id="tab-color" class="flex flex-col gap-4 animate-fade-in" role="tabpanel" aria-labelledby="tab-btn-color">
                 <div class="flex bg-gray-100 p-1 rounded-xl gap-1" role="group" aria-label="Color mode">
                     <button onclick="DeckForge.UI.setEditMode('fill')" 
@@ -498,7 +487,6 @@
                     </button>
                 </div>
 
-                <!-- Gradient Controls -->
                 <div id="gradient-controls" class="hidden flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                     <div class="flex gap-2" role="group" aria-label="Gradient color selection">
                         <button id="btn-grad-start" 
@@ -511,7 +499,7 @@
                                 onclick="DeckForge.Theme.setGradientSlot('end')" 
                                 class="flex-1 py-1.5 flex items-center justify-center gap-2 rounded-lg text-gray-400 hover:bg-white text-[10px] font-bold uppercase"
                                 aria-pressed="false">
-                            <div id="preview-grad-end" class="w-3 h-3 rounded-full border" aria-hidden="true"></div> End
+                            <div class="w-3 h-3 rounded-full border" aria-hidden="true"></div> End
                         </button>
                     </div>
                     <label for="grad-balance" class="sr-only">Gradient balance</label>
@@ -525,52 +513,50 @@
                            aria-label="Gradient balance">
                 </div>
 
-                <!-- Palette Swatches -->
                 <div id="active-palette-row" class="grid grid-cols-6 gap-2" role="group" aria-label="Color palette"></div>
             </div>
 
-            <!-- Shape Tab -->
             <div id="tab-shape" class="hidden flex flex-col gap-5 animate-fade-in" role="tabpanel" aria-labelledby="tab-btn-shape">
                 
                 <div class="flex flex-col gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 mb-4 shadow-inner">
-    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Alignment</span>
-    
-    <div class="flex justify-between gap-2">
-        <button onclick="DeckForge.Align.align('left')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Left">
-            <i class="ph-bold ph-align-left text-xl"></i>
-        </button>
-        <button onclick="DeckForge.Align.align('center')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Center">
-            <i class="ph-bold ph-align-center-horizontal text-xl"></i>
-        </button>
-        <button onclick="DeckForge.Align.align('right')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Right">
-            <i class="ph-bold ph-align-right text-xl"></i>
-        </button>
-    </div>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Alignment</span>
+                    
+                    <div class="flex justify-between gap-2">
+                        <button onclick="DeckForge.Align.align('left')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Left">
+                            <i class="ph-bold ph-align-left text-xl"></i>
+                        </button>
+                        <button onclick="DeckForge.Align.align('center')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Center">
+                            <i class="ph-bold ph-align-center-horizontal text-xl"></i>
+                        </button>
+                        <button onclick="DeckForge.Align.align('right')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Right">
+                            <i class="ph-bold ph-align-right text-xl"></i>
+                        </button>
+                    </div>
 
-    <div class="flex justify-between gap-2">
-        <button onclick="DeckForge.Align.align('top')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Top">
-            <i class="ph-bold ph-align-top text-xl"></i>
-        </button>
-        <button onclick="DeckForge.Align.align('middle')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Middle">
-            <i class="ph-bold ph-align-center-vertical text-xl"></i>
-        </button>
-        <button onclick="DeckForge.Align.align('bottom')" 
-                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
-                aria-label="Align Bottom">
-            <i class="ph-bold ph-align-bottom text-xl"></i>
-        </button>
-    </div>
-</div>
+                    <div class="flex justify-between gap-2">
+                        <button onclick="DeckForge.Align.align('top')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Top">
+                            <i class="ph-bold ph-align-top text-xl"></i>
+                        </button>
+                        <button onclick="DeckForge.Align.align('middle')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Middle">
+                            <i class="ph-bold ph-align-center-vertical text-xl"></i>
+                        </button>
+                        <button onclick="DeckForge.Align.align('bottom')" 
+                                class="flex-1 h-10 rounded-lg bg-white border border-gray-200 text-gray-600 active:bg-blue-50 active:text-blue-600 active:border-blue-200 transition shadow-sm flex items-center justify-center" 
+                                aria-label="Align Bottom">
+                            <i class="ph-bold ph-align-bottom text-xl"></i>
+                        </button>
+                    </div>
+                </div>
 
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wide">
@@ -620,7 +606,6 @@
                 </div>
             </div>
 
-            <!-- Effects Tab -->
             <div id="tab-fx" class="hidden flex flex-col gap-5 animate-fade-in" role="tabpanel" aria-labelledby="tab-btn-fx">
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wide">
@@ -644,7 +629,6 @@
                     </button>
                 </div>
 
-                <!-- Image Filters -->
                 <div id="image-filters" class="hidden flex flex-col gap-4 pt-2 border-t border-gray-100">
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wide">
@@ -679,7 +663,6 @@
         <div class="h-6 w-full bg-white"></div>
     </div>
 
-    <!-- Main Control Buttons -->
     <div id="main-controls" 
          class="fixed bottom-8 left-0 w-full px-6 flex justify-between items-end pointer-events-none z-30 transition-transform duration-300 ease-out"
          role="toolbar"
@@ -702,8 +685,8 @@
         <button onclick="DeckForge.Layers.toggle()" 
         class="pointer-events-auto w-12 h-12 bg-white rounded-full shadow-lg shadow-gray-200/50 text-gray-600 flex items-center justify-center active:scale-90 transition-transform hover:text-blue-600 border border-gray-100 group"
         aria-label="Open layers">
-    <i class="ph-bold ph-stack text-xl group-hover:scale-110 transition-transform" aria-hidden="true"></i>
-</button>
+            <i class="ph-bold ph-stack text-xl group-hover:scale-110 transition-transform" aria-hidden="true"></i>
+        </button>
         <button onclick="DeckForge.UI.toggleSettings()" 
                 class="pointer-events-auto w-12 h-12 bg-white rounded-full shadow-lg shadow-gray-200/50 text-gray-600 flex items-center justify-center active:scale-90 transition-transform hover:text-blue-600 border border-gray-100 group"
                 aria-label="Open library">
@@ -711,10 +694,18 @@
         </button>
     </div>
 
-    <!-- Hidden File Input -->
-    <input type="file" id="img-upload" hidden accept="image/*" aria-hidden="true">
+    <div id="context-menu" class="fixed bg-white shadow-xl rounded-lg border border-gray-100 py-1 z-[999] hidden min-w-[150px]">
+        <button onclick="DeckForge.Canvas.adjustLayer('up'); DeckForge.UI.hideCtx()" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-xs font-bold text-gray-700">Bring Forward</button>
+        <button onclick="DeckForge.Canvas.adjustLayer('down'); DeckForge.UI.hideCtx()" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-xs font-bold text-gray-700">Send Backward</button>
+        <div class="h-px bg-gray-200 my-1"></div>
+        <button onclick="DeckForge.Canvas.toggleLock(); DeckForge.UI.hideCtx()" class="w-full text-left px-4 py-2 hover:bg-blue-50 text-xs font-bold text-gray-700">Lock/Unlock</button>
+        <button onclick="DeckForge.Canvas.deleteActive(); DeckForge.UI.hideCtx()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-bold text-red-600">Delete</button>
+    </div>
 
-    <!-- Text Editor Modal -->
+    <input type="file" id="img-upload" hidden accept="image/*" aria-hidden="true">
+    <input type="file" id="asset-upload" hidden accept="image/*" aria-hidden="true"
+           onchange="DeckForge.Assets.handleUpload(this.files[0]); this.value='';">
+
     <div id="text-editor" 
          class="fixed inset-0 bg-black/60 backdrop-blur-md z-[70] hidden flex flex-col justify-end sm:justify-center animate-fade-in"
          role="dialog"
@@ -769,19 +760,31 @@
             </div>
         </div>
     </div>
-<div id="export-modal" 
+    
+    <div id="export-modal" 
          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-6"
          role="dialog"
          aria-labelledby="export-title"
          aria-modal="true">
-        
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-gray-100">
             <h3 id="export-title" class="text-xl font-bold text-gray-900 mb-1">Export</h3>
             <p id="export-subtitle" class="text-xs text-gray-500 mb-6">Choose a format.</p>
             
             <input type="hidden" id="export-mode" value="single">
             <input type="hidden" id="export-target-idx" value="-1">
-
+<div class="mt-3 space-y-1" id="export-quality-wrap">
+  <label for="export-quality" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+    Quality (for PNG/JPG/PDF exports)
+  </label>
+  <div class="flex items-center gap-2">
+    <input id="export-quality" type="range" min="1" max="3" step="1" value="2"
+           class="w-full">
+    <span id="export-quality-val" class="text-xs font-mono text-gray-500">2</span>
+  </div>
+  <p class="text-[10px] text-gray-400">
+    1 = lighter, 2 = recommended, 3 = largest (best for print)
+  </p>
+</div>
             <div id="opts-single" class="grid grid-cols-2 gap-3 mb-4">
                 <button onclick="DeckForge.Export.process('png')" class="flex flex-col items-center p-3 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition">
                     <span class="font-bold text-xl text-blue-600 mb-1">PNG</span>
@@ -809,7 +812,21 @@
                     </div>
                     <i class="ph-bold ph-printer text-2xl text-red-300 group-hover:text-red-500"></i>
                 </button>
-
+<!-- iOS-friendly batch option (deck-only) -->
+<div class="mt-4 space-y-2" id="export-open-images-wrap">
+  <button onclick="DeckForge.Export.process('open-images')"
+          class="w-full py-2 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm active:scale-95 transition">
+    Open images (iOS-friendly)
+  </button>
+  <div class="text-[10px] text-gray-500">
+    Opens images in new tabs for saving/sharing. If many images, use ZIP or PDF instead.
+  </div>
+  <div class="flex items-center gap-2 text-[10px] text-gray-500">
+    <label for="export-open-limit" class="font-bold uppercase tracking-widest">Max to open</label>
+    <input id="export-open-limit" type="number" min="1" max="30" value="12"
+           class="w-16 text-xs p-1 border rounded">
+  </div>
+</div>
                 <button onclick="DeckForge.Export.process('zip')" class="flex flex-col items-center p-3 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition">
                     <span class="font-bold text-xl text-blue-600 mb-1">ZIP</span>
                     <span class="text-[10px] uppercase font-bold text-gray-400">Images</span>
@@ -864,180 +881,18 @@
             </button>
         </div>
     </div>
-    <!-- Save Modal -->
-    <div id="save-modal" 
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-6"
-         role="dialog"
-         aria-labelledby="save-modal-title"
-         aria-modal="true">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-gray-100">
-            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-4 text-blue-600">
-                <i class="ph-fill ph-floppy-disk text-2xl" aria-hidden="true"></i>
-            </div>
-            <h3 id="save-modal-title" class="text-xl font-bold text-gray-900 mb-2">Save to Library</h3>
-            <p class="text-sm text-gray-500 mb-6">Give your card design a unique name to retrieve it later.</p>
-            <label for="template-name-input" class="sr-only">Design name</label>
-            <input type="text" 
-                   id="template-name-input" 
-                   class="w-full border-2 border-gray-100 rounded-xl p-3.5 text-lg font-bold mb-6 focus:border-blue-500 focus:ring-0 outline-none text-gray-800 placeholder-gray-300" 
-                   placeholder="e.g.Fire Dragon V1">
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('save-modal').classList.add('hidden')" 
-                        class="flex-1 py-3.5 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition border border-transparent hover:border-gray-200">
-                    Cancel
-                </button>
-                <button onclick="DeckForge.Templates.confirmSave()" 
-                        class="flex-1 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 active:scale-95 hover:bg-blue-700 transition">
-                    Save Design
-                </button>
-            </div>
-        </div>
-    </div>
-
-        <!-- Variable Modal -->
-    <div id="variable-modal" 
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[85] hidden flex items-center justify-center p-6"
-         role="dialog"
-         aria-labelledby="variable-modal-title"
-         aria-modal="true">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-gray-100">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="variable-modal-title" class="text-lg font-bold text-gray-900">Add Variable</h3>
-                <button onclick="document.getElementById('variable-modal').classList.add('hidden')" 
-                        class="text-gray-400 hover:text-gray-600"
-                        aria-label="Close">
-                    <i class="ph-bold ph-x" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label for="var-name" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Name</label>
-                    <input type="text" 
-                           id="var-name" 
-                           class="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-bold mt-1" 
-                           placeholder="e.g. cost">
-                </div>
-                <div>
-                    <label for="var-values" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Values</label>
-                    <textarea id="var-values" 
-                              rows="3" 
-                              class="w-full border border-gray-300 rounded-lg p-2.5 text-sm mt-1 font-mono" 
-                              placeholder="1-10 or Fire, Water, Earth"></textarea>
-                    <p class="text-[10px] text-gray-400 mt-1">Accepts ranges (1-5) or comma-lists.</p>
-                </div>
-                <button onclick="DeckForge.DeckData.confirmAddVariable()" 
-                        class="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-200 active:scale-95 hover:bg-blue-700 transition">
-                    Add Data
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SVG Import Modal -->
-    <div id="svg-modal" 
-         class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-6"
-         role="dialog"
-         aria-labelledby="svg-modal-title"
-         aria-modal="true">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 border border-gray-100 relative">
-            <button onclick="document.getElementById('svg-modal').classList.add('hidden')" 
-                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                    aria-label="Close">
-                <i class="ph-bold ph-x text-xl" aria-hidden="true"></i>
-            </button>
-            <h3 id="svg-modal-title" class="text-lg font-bold text-gray-900 mb-1">Add Smart Vector</h3>
-            <p class="text-xs text-gray-500 mb-4">Paste SVG code. Colors will auto-snap to your theme.</p>
-            <label for="svg-input" class="sr-only">SVG Code</label>
-            <textarea id="svg-input" 
-                      rows="6" 
-                      class="w-full border-2 border-gray-100 rounded-xl p-3 text-xs font-mono mb-4 focus:border-pink-500 focus:ring-0 outline-none resize-none" 
-                      placeholder="<svg...>"></textarea>
-            <button onclick="DeckForge.SVG.confirmAdd()" 
-                    class="w-full py-3 bg-pink-600 text-white font-bold rounded-xl shadow-lg shadow-pink-200 active:scale-95 hover:bg-pink-700 transition">
-                Add Vector
-            </button>
-        </div>
-    </div>
-
-    <!-- Deck Roulette Viewer -->
-    <div id="deck-roulette" 
-         class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col transition-opacity duration-300 opacity-0"
-         role="dialog"
-         aria-labelledby="roulette-title"
-         aria-modal="true">
-        
-        <div class="h-16 flex items-center justify-between px-6 shrink-0 relative z-30">
-            <h2 id="roulette-title" class="text-white font-bold text-lg tracking-widest uppercase">My Deck</h2>
-            <div class="flex gap-4">
-                <button onclick="DeckForge.DeckCollection.toggleFlip()" 
-                        class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-bold uppercase transition border border-white/10"
-                        aria-label="Flip card">
-                    <i class="ph-bold ph-arrows-left-right" aria-hidden="true"></i> Flip Card
-                </button>
-                <button onclick="DeckForge.DeckCollection.closeRoulette()" 
-                        class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
-                        aria-label="Close viewer">
-                    <i class="ph-bold ph-x text-xl" aria-hidden="true"></i>
-                </button>
-            </div>
-        </div>
-
-        <div class="flex-1 relative flex items-center justify-center overflow-hidden">
-            
-            <button onclick="DeckForge.DeckCollection.nav(-1)" 
-                    class="absolute left-4 z-40 w-12 h-12 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white hover:text-black transition flex items-center justify-center shadow-2xl active:scale-95"
-                    aria-label="Previous card">
-                <i class="ph-bold ph-caret-left text-2xl" aria-hidden="true"></i>
-            </button>
-            <button onclick="DeckForge.DeckCollection.nav(1)" 
-                    class="absolute right-4 z-40 w-12 h-12 rounded-full bg-white/10 backdrop-blur text-white hover:bg-white hover:text-black transition flex items-center justify-center shadow-2xl active:scale-95"
-                    aria-label="Next card">
-                <i class="ph-bold ph-caret-right text-2xl" aria-hidden="true"></i>
-            </button>
-
-            <div id="roulette-viewport" class="perspective-1000 w-full max-w-lg max-h-[70vh] aspect-[5/7]">
-                <div id="card-inner" class="flip-card-inner">
-                    
-                    <div class="flip-card-front">
-                        <canvas id="roulette-canvas" aria-label="Card front"></canvas>
-                    </div>
-                    
-                    <div class="flip-card-back">
-                        <canvas id="roulette-back-canvas" aria-label="Card back"></canvas>
-                        <div id="no-back-msg" class="absolute inset-0 flex items-center justify-center bg-gray-900 text-gray-500 font-mono text-xs hidden">
-                            NO BACK DESIGN SET
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur px-4 py-1 rounded-full text-xs font-bold font-mono text-white border border-white/20 z-30" aria-live="polite">
-                <span id="roulette-idx">1</span> / <span id="roulette-total">10</span>
-            </div>
-        </div>
-
-        <div class="h-24 flex items-center justify-center gap-4 pb-4 z-30">
-            <button onclick="DeckForge.DeckCollection.loadCurrent()" 
-                    class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg active:scale-95 transition uppercase text-xs">
-                <i class="ph-bold ph-pencil-simple mr-2" aria-hidden="true"></i> Edit Front
-            </button>
-            <button onclick="DeckForge.DeckCollection.deleteCurrent()" 
-                    class="px-6 py-3 bg-red-500/10 border border-red-500/50 hover:bg-red-500 text-red-100 hover:text-white font-bold rounded-xl active:scale-95 transition uppercase text-xs">
-                <i class="ph-bold ph-trash mr-2" aria-hidden="true"></i> Remove
-            </button>
-        </div>
-    </div>
-
-    <!-- Mask Controls (Hidden by default) -->
-    <div id="mask-controls" class="fixed bottom-32 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-xl px-4 py-2 flex gap-3 z-50 hidden">
-        <button onclick="DeckForge.MaskTool.finish()" class="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-full">
-            Apply Mask
-        </button>
-        <button onclick="DeckForge.MaskTool.cancel()" class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-bold rounded-full">
-            Cancel
-        </button>
-    </div>
-
+     <script src="js/utils.js"></script>
+<script src="js/history.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/layers.js"></script>
+<script src="js/svg.js"></script>
+<script src="js/export.js"></script>
+<script src="js/deckdata.js"></script>
+<script src="js/text.js"></script>
+<script src="js/canvas.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/mask-tool.js"></script> 
 </body>
+
 </html>
