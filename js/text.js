@@ -54,20 +54,25 @@
         },
 
         renderFontList: function() {
-            const container = DeckForge.Utils.getElement('font-list-container');
-            if (!container) return;
-            
-            DeckForge.FONT_OPTIONS.forEach(font => {
-                const div = document.createElement('div');
-                div.className = "p-3 rounded-lg hover:bg-white hover:shadow-sm cursor-pointer border border-transparent hover:border-gray-200 transition flex items-center justify-between group";
-                div.onclick = () => this.setFont(font.val);
-                div.innerHTML = `
-                    <span style="font-family:'${font.val}', sans-serif" class="text-lg text-gray-700">${font.name}</span>
-                    <i class="ph-bold ph-check text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                `;
-                container.appendChild(div);
-            });
-        },
+    const container = DeckForge.Utils.getElement('font-list-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    // Get all fonts (custom + built-in)
+    const allFonts = DeckForge.Fonts ? DeckForge.Fonts.getAllFonts() : DeckForge.FONT_OPTIONS;
+    
+    allFonts.forEach(font => {
+        const div = document.createElement('div');
+        div.className = "p-3 rounded-lg hover:bg-white hover:shadow-sm cursor-pointer border border-transparent hover:border-gray-200 transition flex items-center justify-between group";
+        div.onclick = () => this.setFont(font.val);
+        div.innerHTML = `
+            <span style="font-family:'${font.val}', sans-serif" class="text-lg text-gray-700">${font.name}</span>
+            <i class="ph-bold ph-check text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+        `;
+        container.appendChild(div);
+    });
+},
 
         setFont: function(fontName) {
             const obj = DeckForge.canvas.getActiveObject();
