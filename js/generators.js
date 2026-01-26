@@ -579,73 +579,97 @@
             },
 
             'horizon': {
-                name: 'Neon Horizon',
-                icon: 'ph-sun-horizon',
-                description: 'Retro sun with perspective blinds',
-                params: [
-                    { id: 'col1', type: 'color', label: 'Top Color', def: state.palette[2], half: true },
-                    { id: 'col2', type: 'color', label: 'Bottom Color', def: state.palette[3], half: true },
-                    { id: 'sunSize', type: 'range', label: 'Sun Size', min: 100, max: 600, def: 350, half: true },
-                    { id: 'curve', type: 'range', label: 'Perspective', min: 1, max: 50, def: 20, half: true },
-                    { id: 'gap', type: 'range', label: 'Line Gap', min: 2, max: 20, def: 8, half: true },
-                    { id: 'invert', type: 'checkbox', label: 'Invert Mask', def: false }
-                ],
-                generate: (values) => {
-                    const width = CARD_WIDTH;
-                    const height = CARD_HEIGHT;
-                    const sunR = parseInt(values.sunSize);
-                    const gap = parseInt(values.gap);
-                    const curveStrength = parseInt(values.curve) / 10;
+    name: 'Neon Horizon',
+    icon: 'ph-sun-horizon',
+    description: 'Retro sun with perspective blinds',
+    params: [
+        { id: 'col1', type: 'color', label: 'Sky/Lines', def: state.palette[2], half: true },
+        { id: 'col2', type: 'color', label: 'Sun Color', def: state.palette[3], half: true },
+        { id: 'sunSize', type: 'range', label: 'Sun Size', min: 100, max: 600, def: 350, half: true },
+        { id: 'lineCount', type: 'range', label: 'Line Count', min: 10, max: 60, def: 30, half: true },
+        { id: 'curve', type: 'range', label: 'Perspective', min: 1, max: 50, def: 20, half: true }
+    ],
+    generate: (values) => {
+        const width = CARD_WIDTH;
+        const height = CARD_HEIGHT;
+        const sunR = parseInt(values.sunSize);
+        const lineCount = parseInt(values.lineCount);
+        const curveStrength = parseInt(values.curve) / 10;
+        const group = [];
 
-                    const bg = new fabric.Rect({
-                        width: width, height: height, left: 0, top: 0,
-                        originX: 'center', originY: 'center', fill: values.col1
-                    });
+        // Background rectangle
+        const bg = new fabric.Rect({
+            width: width + 100,
+            height: height + 100,
+            left: 0,
+            top: 0,
+            originX: 'center',
+            originY: 'center',
+            fill: values.col1
+        });
+        group.push(bg);
 
-                    const sunTop = new fabric.Circle({
-                        radius: sunR, left: 0, top: -height/2,
-                        originX: 'center', originY: 'center', fill: values.col1
-                    });
+        // Top sun (rising)
+        const sunTop = new fabric.Circle({
+            radius: sunR,
+            left: 0,
+            top: -height / 2 + sunR * 0.3,
+            originX: 'center',
+            originY: 'center',
+            fill: values.col2
+        });
+        group.push(sunTop);
 
-                    const sunBot = new fabric.Circle({
-                        radius: sunR, left: 0, top: height/2,
-                        originX: 'center', originY: 'center', fill: values.col1
-                    });
+        // Bottom sun (reflection)
+        const sunBot = new fabric.Circle({
+            radius: sunR,
+            left: 0,
+            top: height / 2 - sunR * 0.3,
+            originX: 'center',
+            originY: 'center',
+            fill: values.col2
+        });
+        group.push(sunBot);
 
-                    const maskLines = [];
-                    let currentY = -height / 2;
-                    
-                    while (currentY < height / 2) {
-                        const dist = Math.abs(currentY) / (height / 2);
-                        let thickness = Math.max(1, 40 * Math.pow(dist, curveStrength));
-                        
-                        const strip = new fabric.Rect({
-                            width: width, height: thickness, left: 0, top: currentY,
-                            originX: 'center', originY: 'top', fill: 'black'
-                        });
-                        maskLines.push(strip);
-                        currentY += thickness + gap;
-                    }
+        // Horizontal lines (venetian blind effect)
+        const totalHeight = height;
+        const spacing = totalHeight / lineCount;
+        
+        for (let i = 0; i < lineCount; i++) {
+            // Perspective: lines get thinner and closer together toward horizon (center)
+            const normalizedPos = Math.abs((i / lineCount) - 0.5) * 2; // 0 at center, 1 at edges
+            const thickness = Math.max(1, spacing * 0.6 * Math.pow(normalizedPos, curveStrength));
+            const y = -height / 2 + (i * spacing) + spacing / 2;
+            
+            const line = new fabric.Rect({
+                width: width + 100,
+                height: thickness,
+                left: 0,
+                top: y,
+                originX: 'center',
+                originY: 'center',
+                fill: values.col1
+            });
+            group.push(line);
+        }
 
-                    const maskGroup = new fabric.Group(maskLines, { originX: 'center', originY: 'center' });
-                    const artGroup = new fabric.Group([bg, sunTop, sunBot], {
-                        left: CARD_WIDTH / 2, top: CARD_HEIGHT / 2,
-                        originX: 'center', originY: 'center', objectCaching: false
-                    });
+        const idx1 = state.palette.indexOf(values.col1);
+        const idx2 = state.palette.indexOf(values.col2);
 
-                    artGroup.clipPath = maskGroup;
-                    const idx1 = state.palette.indexOf(values.col1);
-                    const idx2 = state.palette.indexOf(values.col2);
+        const artGroup = new fabric.Group(group, {
+            left: CARD_WIDTH / 2,
+            top: CARD_HEIGHT / 2,
+            originX: 'center',
+            originY: 'center',
+            isParticleGroup: true,
+            generativeType: 'fill',
+            roleGradientStart: idx1 > -1 ? idx1 : 2,
+            roleGradientEnd: idx2 > -1 ? idx2 : 3
+        });
 
-                    artGroup.set({
-                        roleGradientStart: idx1 > -1 ? idx1 : 2,
-                        roleGradientEnd: idx2 > -1 ? idx2 : 3,
-                        gradBalance: 0
-                    });
-
-                    return artGroup;
-                }
-            },
+        return artGroup;
+    }
+},
 
             'scribble': {
                 name: 'Noise Flow',
