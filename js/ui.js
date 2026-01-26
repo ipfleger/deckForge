@@ -317,29 +317,34 @@
             if (mainControls) mainControls.classList.remove('translate-y-24');
         },
 
-        setPropTab: function(tabName) {
-            ['color', 'shape', 'fx'].forEach(t => {
-                const content = DeckForge.Utils.getElement(`tab-${t}`);
-                const btn = DeckForge.Utils.getElement(`tab-btn-${t}`);
-                
-                if (content) content.classList.add('hidden');
-                if (btn) {
-                    btn.classList.remove('text-blue-600', 'border-blue-600');
-                    btn.classList.add('text-gray-400', 'border-transparent');
-                    btn.setAttribute('aria-selected', 'false');
-                }
-            });
-
-            const activeContent = DeckForge.Utils.getElement(`tab-${tabName}`);
-            const activeBtn = DeckForge.Utils.getElement(`tab-btn-${tabName}`);
-            
-            if (activeContent) activeContent.classList.remove('hidden');
-            if (activeBtn) {
-                activeBtn.classList.remove('text-gray-400', 'border-transparent');
-                activeBtn.classList.add('text-blue-600', 'border-blue-600');
-                activeBtn.setAttribute('aria-selected', 'true');
+setPropTab: function(tab) {
+    const tabs = ['color', 'shape', 'fx', 'type'];
+    
+    tabs.forEach(t => {
+        const btn = DeckForge.Utils.getElement(`tab-btn-${t}`);
+        const panel = DeckForge.Utils.getElement(`tab-${t}`);
+        
+        if (btn) {
+            if (t === tab) {
+                btn.classList.add('text-blue-600', 'border-blue-600');
+                btn.classList.remove('text-gray-400', 'border-transparent');
+                btn.setAttribute('aria-selected', 'true');
+            } else {
+                btn.classList.remove('text-blue-600', 'border-blue-600');
+                btn.classList.add('text-gray-400', 'border-transparent');
+                btn.setAttribute('aria-selected', 'false');
             }
-        },
+        }
+        
+        if (panel) {
+            if (t === tab) {
+                panel.classList.remove('hidden');
+            } else {
+                panel.classList.add('hidden');
+            }
+        }
+    });
+},
 
         setEditMode: function(mode) {
             DeckForge.state.editMode = mode;
@@ -361,42 +366,48 @@
             if (DeckForge.Theme) DeckForge.Theme.renderPaletteUI();
         },
 
-        updateContextualUI: function(obj) {
-            if (!obj) return;
+ updateContextualUI: function(obj) {
+    const editTextBtn = DeckForge.Utils.getElement('btn-edit-text');
+    const radiusGroup = DeckForge.Utils.getElement('group-radius');
+    const imageFilters = DeckForge.Utils.getElement('image-filters');
+    const typeTab = DeckForge.Utils.getElement('tab-btn-type');
 
-            const elEditText = DeckForge.Utils.getElement('btn-edit-text');
-            const elRadius = DeckForge.Utils.getElement('group-radius');
-            const elFilters = DeckForge.Utils.getElement('image-filters');
-            const elFillBtn = DeckForge.Utils.getElement('mode-fill');
-            const lblSizeTitle = DeckForge.Utils.getElement('lbl-size-title');
+    // Show/hide text edit button
+    if (editTextBtn) {
+        if (obj && obj.type === 'i-text') {
+            editTextBtn.classList.remove('hidden');
+        } else {
+            editTextBtn.classList.add('hidden');
+        }
+    }
 
-            if (elEditText) elEditText.classList.add('hidden');
-            if (elRadius) elRadius.classList.add('hidden');
-            if (elFilters) elFilters.classList.add('hidden');
-            if (elFillBtn) elFillBtn.classList.remove('hidden');
+    // Show/hide Type tab for text objects
+    if (typeTab) {
+        if (obj && obj.type === 'i-text') {
+            typeTab.classList.remove('hidden');
+        } else {
+            typeTab.classList.add('hidden');
+        }
+    }
 
-            switch (obj.type) {
-                case 'i-text':
-                    if (elEditText) elEditText.classList.remove('hidden');
-                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-text-aa"></i> Font Size';
-                    break;
+    // Show/hide corner radius for rectangles
+    if (radiusGroup) {
+        if (obj && obj.type === 'rect') {
+            radiusGroup.classList.remove('hidden');
+        } else {
+            radiusGroup.classList.add('hidden');
+        }
+    }
 
-                case 'image':
-                    if (elFilters) elFilters.classList.remove('hidden');
-                    if (elFillBtn) elFillBtn.classList.add('hidden');
-                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Scale';
-                    break;
-
-                case 'rect':
-                    if (elRadius) elRadius.classList.remove('hidden');
-                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Size';
-                    break;
-
-                default:
-                    if (lblSizeTitle) lblSizeTitle.innerHTML = '<i class="ph-bold ph-arrows-out-simple"></i> Scale';
-                    break;
-            }
-        },
+    // Show/hide image filters
+    if (imageFilters) {
+        if (obj && obj.type === 'image') {
+            imageFilters.classList.remove('hidden');
+        } else {
+            imageFilters.classList.add('hidden');
+        }
+    }
+},
 
         updateLockUI: function(isLocked) {
             const btn = DeckForge.Utils.getElement('btn-lock');
