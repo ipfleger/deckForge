@@ -79,6 +79,10 @@
                 DeckForge.UI.setPropTab('color');
                 DeckForge.UI.updateContextualUI(obj);
                 DeckForge.UI.updateLockUI(obj.locked);
+                // Update typography UI for text objects
+                if (obj.type === 'i-text' && DeckForge.Text) {
+                    DeckForge.Text.updateTypographyUI(obj);
+                }
                 if (DeckForge.Theme) DeckForge.Theme.updateGradientUI(obj);
 
                 DeckForge.Utils.setInputValue('inp-opacity', obj.opacity || 1);
