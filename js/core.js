@@ -34,6 +34,7 @@ window.DeckForge = window.DeckForge || {};
     ];
 
     DeckForge.FONT_OPTIONS = [
+        { name:'Lost Mono', val:'lost_mono' },
         { name:'Inter', val:'Inter' },
         { name:'Roboto', val:'Roboto' },
         { name:'Merriweather', val:'Merriweather' },
