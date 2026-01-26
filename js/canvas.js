@@ -222,24 +222,27 @@
         },
 
         addText: function() {
-            const text = new fabric.IText('New Text', {
-                left: DeckForge.CARD_WIDTH / 2,
-                top: DeckForge.CARD_HEIGHT / 2,
-                originX: 'center',
-                originY: 'center',
-                fontFamily: 'Inter',
-                fontSize: 60,
-                editable: true
-            });
-            
-            text.roleFill = 4;
-            text.roleStroke = -1;
-            text.set('fill', DeckForge.Utils.getPaletteColor(4));
-            
-            DeckForge.canvas.add(text);
-            DeckForge.canvas.setActiveObject(text);
-            this.autoPanToSelection();
-        },
+    // Ensure font is loaded before creating text
+    document.fonts.ready.then(() => {
+        const text = new fabric.IText('New Text', {
+            left: DeckForge.CARD_WIDTH / 2,
+            top: DeckForge.CARD_HEIGHT / 2,
+            originX: 'center',
+            originY: 'center',
+            fontFamily: 'lost_mono',
+            fontSize: 60,
+            editable: true
+        });
+        
+        text.roleFill = 4;
+        text.roleStroke = -1;
+        text.set('fill', DeckForge.Utils.getPaletteColor(4));
+        
+        DeckForge.canvas.add(text);
+        DeckForge.canvas.setActiveObject(text);
+        this.autoPanToSelection();
+    });
+},
 
         autoPanToSelection: function() {
             DeckForge.state.panY -= 150 * DeckForge.state.scale;
