@@ -119,7 +119,7 @@ body {
     touch-action:none;
     user-select:none;
     -webkit-user-select:none;
-    font-family:'lost_mono', 'Inter', sans-serif;
+    font-family:'Inter', sans-serif;
     background-color:#f1f5f9;
     overflow:hidden;
     width:100vw;
