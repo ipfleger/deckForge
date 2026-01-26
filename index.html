@@ -191,7 +191,19 @@
                 </div>
                 <div id="template-list" class="flex flex-col gap-2" role="list" aria-label="Saved designs"></div>
             </section>
-            
+            <hr class="border-gray-100">
+
+<section class="space-y-3" aria-labelledby="fonts-heading">
+    <div class="flex justify-between items-center">
+        <h3 id="fonts-heading" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Custom Fonts</h3>
+        <button onclick="DeckForge.Fonts.triggerUpload()" 
+                class="text-[10px] font-bold text-white bg-purple-600 px-3 py-1.5 rounded-full hover:bg-purple-700 shadow-sm transition active:scale-95">
+            + ADD FONT
+        </button>
+    </div>
+    <p class="text-[10px] text-gray-400">Upload .ttf, .otf, .woff, or .woff2 files.</p>
+    <div id="custom-fonts-list" class="flex flex-col gap-2" role="list" aria-label="Custom fonts"></div>
+</section>
             <hr class="border-gray-100">
 
             <section class="space-y-3" aria-labelledby="decks-heading">
@@ -889,6 +901,7 @@
 <script src="js/svg.js"></script>
 <script src="js/export.js"></script>
 <script src="js/deckdata.js"></script>
+<script src="js/fonts.js"></script>
 <script src="js/text.js"></script>
 <script src="js/canvas.js"></script>
 <script src="js/ui.js"></script>
