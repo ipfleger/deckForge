@@ -125,7 +125,7 @@
             const centerNum = new fabric.IText('3', {
                 left: DeckForge.CARD_WIDTH / 2,
                 top: DeckForge.CARD_HEIGHT / 2,
-                fontFamily: 'Inter',
+                fontFamily: 'lost_mono',
                 fontSize: 400,
                 fontWeight: 'bold',
                 fill: DeckForge.state.palette[4],
