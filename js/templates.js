@@ -5,6 +5,10 @@
     'use strict';
 
     DeckForge.Templates = {
+        init: function() {
+            this.loadList();
+        },
+
         openSaveModal: function() {
             const modal = DeckForge.Utils.getElement('save-modal');
             if (modal) {
