@@ -252,28 +252,33 @@
         },
 
         handleImageUpload: function(file) {
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                fabric.Image.fromURL(ev.target.result, (img) => {
-                    img.set({
-                        left: DeckForge.CARD_WIDTH / 2,
-                        top: DeckForge.CARD_HEIGHT / 2,
-                        originX: 'center',
-                        originY: 'center'
-                    });
-                    
-                    if (img.width > DeckForge.CARD_WIDTH * 0.8) {
-                        img.scaleToWidth(DeckForge.CARD_WIDTH * 0.8);
-                    }
-                    
-                    DeckForge.canvas.add(img);
-                    DeckForge.canvas.setActiveObject(img);
-                    DeckForge.History.save();
-                });
-            };
-            reader.readAsDataURL(file);
-        },
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        // ✅ get the actual fabric canvas instance
+        const canvas = DeckForge.getCanvas && DeckForge.getCanvas();
+        if (!canvas) return;
+
+        fabric.Image.fromURL(ev.target.result, (img) => {
+            img.set({
+                left: DeckForge.CARD_WIDTH / 2,
+                top: DeckForge.CARD_HEIGHT / 2,
+                originX: 'center',
+                originY: 'center'
+            });
+            
+            if (img.width > DeckForge.CARD_WIDTH * 0.8) {
+                img.scaleToWidth(DeckForge.CARD_WIDTH * 0.8);
+            }
+            
+            canvas.add(img);
+            canvas.setActiveObject(img);
+            canvas.requestRenderAll();
+            DeckForge.History.save();
+        });
+    };
+    reader.readAsDataURL(file);
+},
 
         deleteActive: function() {
             const obj = DeckForge.canvas.getActiveObject();
