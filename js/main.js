@@ -303,29 +303,32 @@
     },
     
     handleImageUpload:function(file) {
-      if (!file) return;
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const canvas = DeckForge.getCanvas ? DeckForge.getCanvas() : (typeof canvas !== 'undefined' ? canvas : null);
+    if (!canvas) return;
+
+    fabric.Image.fromURL(ev.target.result, (img) => {
+      img.set({
+        left:DeckForge.CARD_WIDTH / 2,
+        top:DeckForge.CARD_HEIGHT / 2,
+        originX:'center',
+        originY:'center'
+      });
       
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        fabric.Image.fromURL(ev.target.result, (img) => {
-          img.set({
-            left:CARD_WIDTH / 2,
-            top:CARD_HEIGHT / 2,
-            originX:'center',
-            originY:'center'
-          });
-          
-          if (img.width > CARD_WIDTH * 0.8) {
-            img.scaleToWidth(CARD_WIDTH * 0.8);
-          }
-          
-          canvas.add(img);
-          canvas.setActiveObject(img);
-          History.save();
-        });
-      };
-      reader.readAsDataURL(file);
-    },
+      if (img.width > DeckForge.CARD_WIDTH * 0.8) {
+        img.scaleToWidth(DeckForge.CARD_WIDTH * 0.8);
+      }
+      
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.requestRenderAll();
+      DeckForge.History.save();
+    });
+  };
+  reader.readAsDataURL(file);
+},
     
     deleteActive:function() {
       const obj = canvas.getActiveObject();
@@ -629,3 +632,4 @@
         History.save();
       }
     };
+
