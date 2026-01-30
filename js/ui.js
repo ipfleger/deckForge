@@ -341,26 +341,67 @@
         y: (screenY - panY) / scale
     });
 
-    window.addEventListener('wheel', (opt) => {
-        if (opt.ctrlKey) {
-            opt.preventDefault();
+    // Track for pinch gesture detection
+    let lastWheelTime = 0;
+    let wheelEventCount = 0;
+    let isPinchGesture = false;
+
+    window.addEventListener('wheel', (e) => {
+        const now = performance.now();
+        
+        // ===== DETECT PINCH GESTURE =====
+        // Trackpad pinch characteristics:
+        // 1. ctrlKey is true (browser convention for pinch)
+        // 2. deltaY is small (typically < 10 for pinch, > 50 for mouse wheel click)
+        // 3. Events fire rapidly (< 50ms apart)
+        // 4. deltaMode is 0 (pixel-based, not line-based)
+        
+        const isCtrlZoom = e.ctrlKey;
+        const isSmallDelta = Math.abs(e.deltaY) < 50;
+        const isRapidFire = (now - lastWheelTime) < 100;
+        const isPixelMode = e.deltaMode === 0;
+        
+        // Detect if this is likely a trackpad pinch
+        if (isCtrlZoom && isSmallDelta && isPixelMode) {
+            isPinchGesture = true;
+            wheelEventCount++;
+        } else if (!isCtrlZoom) {
+            isPinchGesture = false;
+            wheelEventCount = 0;
+        }
+        
+        lastWheelTime = now;
+
+        // ===== ZOOM HANDLING =====
+        if (isCtrlZoom) {
+            e.preventDefault();
             
             const oldScale = DeckForge.state.scale;
             
-            // Normalized zoom factor (Adobe-style)
-            const zoomIntensity = 0.002;
-            const zoomDelta = -opt.deltaY * zoomIntensity;
+            // Different zoom intensity for trackpad vs mouse wheel
+            // Trackpad pinch: smoother, smaller steps
+            // Mouse wheel: larger, discrete steps
+            let zoomIntensity;
+            if (isPinchGesture) {
+                // Trackpad pinch - very smooth
+                zoomIntensity = 0.01;
+            } else {
+                // Mouse wheel with Ctrl - discrete steps
+                zoomIntensity = 0.002;
+            }
+            
+            const zoomDelta = -e.deltaY * zoomIntensity;
             let newScale = oldScale * (1 + zoomDelta);
             
             // Clamp to zoom limits
             newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
             
-            // If scale didn't actually change (hit limits), skip pan recalculation
+            // Skip if scale didn't change (hit limits)
             if (newScale === oldScale) return;
             
-            // ZOOM-TO-CURSOR: Keep the point under the mouse stationary
-            const mouseX = opt.clientX;
-            const mouseY = opt.clientY;
+            // ZOOM-TO-CURSOR
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
             
             const worldPoint = screenToWorld(
                 mouseX, 
@@ -379,9 +420,11 @@
             
             this.renderTransform();
             
-        } else if (!opt.target.closest('.overflow-y-auto')) {
-            DeckForge.state.panX -= opt.deltaX;
-            DeckForge.state.panY -= opt.deltaY;
+        } else if (!e.target.closest('.overflow-y-auto')) {
+            // ===== PAN HANDLING =====
+            // Regular two-finger scroll on trackpad or mouse wheel
+            DeckForge.state.panX -= e.deltaX;
+            DeckForge.state.panY -= e.deltaY;
             this.renderTransform();
         }
     }, { passive: false });
