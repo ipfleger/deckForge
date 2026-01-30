@@ -73,29 +73,6 @@
             DeckForge.Shortcuts.init();
         }
 
-        // 10. Keyboard safety (Delete/Escape) and undo/redo
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault(); DeckForge.History.undo();
-            }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-                e.preventDefault(); DeckForge.History.redo();
-            }
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                const activeEl = document.activeElement;
-                if (activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'TEXTAREA') {
-                    e.preventDefault(); DeckForge.Canvas.deleteActive();
-                }
-            }
-            if (e.key === 'Escape') {
-                if (canvas) {
-                    canvas.discardActiveObject();
-                    canvas.requestRenderAll();
-                }
-                DeckForge.UI?.closeAllDrawers?.();
-            }
-        });
-
         // 11. Window resize handler
         window.addEventListener('resize', DeckForge.Utils.debounce(() => {
             DeckForge.UI?.resetView?.();
