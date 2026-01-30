@@ -78,8 +78,8 @@ window.DeckForge = window.DeckForge || {};
         redoStack: [],
         isProcessing: false,
         scale: 0.8,
-        panX: 0,
-        panY: 0,
+        panX: null,
+        panY: null,
         activePattern: null
     };
 
