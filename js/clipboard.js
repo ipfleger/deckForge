@@ -112,29 +112,8 @@
             }, 1200);
         },
 
-        // Keyboard shortcuts for desktop
-        initKeyboardShortcuts: function() {
-            document.addEventListener('keydown', (e) => {
-                // Ignore if typing in an input
-                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-
-                const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-                const modifier = isMac ? e.metaKey : e.ctrlKey;
-
-                if (modifier && e.key === 'c') {
-                    e.preventDefault();
-                    this.copy();
-                } else if (modifier && e.key === 'v') {
-                    e.preventDefault();
-                    this.paste();
-                } else if (modifier && e.key === 'd') {
-                    e.preventDefault();
-                    this.duplicate();
-                }
-            });
-        },
-
         init: function() {
+            // Keyboard shortcuts now handled centrally by DeckForge.Shortcuts
         }
     };
 })();
