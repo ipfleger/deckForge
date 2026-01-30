@@ -475,7 +475,7 @@
             }
         },
 
-        resetView: function() {
+                resetView: function() {
             // Use window dimensions directly for mobile safety
             const w = window.innerWidth;
             const h = window.innerHeight;
@@ -502,6 +502,9 @@
             // (Screen Dimension - (Card Dimension * Scale)) / 2
             DeckForge.state.panX = (w - (DeckForge.CARD_WIDTH * newScale)) / 2;
             DeckForge.state.panY = (h - (DeckForge.CARD_HEIGHT * newScale)) / 2;
+
+            // DEBUG: Add this line
+            console.log('resetView:', { w, h, panX: DeckForge.state.panX, panY: DeckForge.state.panY, scale: newScale });
 
             this.renderTransform();
         },
