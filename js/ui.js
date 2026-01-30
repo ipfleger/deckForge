@@ -65,74 +65,106 @@
         },
 
         setupGestureHandlers: function() {
-            const stage = DeckForge.Utils.getElement('stage-container');
-            if (!stage) return;
+    const stage = DeckForge.Utils.getElement('stage-container');
+    if (!stage) return;
 
-            let isGesturing = false;
-            let startDist = 0;
-            let startScale = 1;
-            let startPanX = 0;
-            let startPanY = 0;
-            let pinchCenter = { x: 0, y: 0 };
+    let isGesturing = false;
+    let startDist = 0;
+    let startScale = 1;
+    let startPanX = 0;
+    let startPanY = 0;
+    let startCenter = { x: 0, y: 0 };  // Screen coords of initial pinch center
+    let anchorWorld = { x: 0, y: 0 };  // World coords under initial pinch (THE KEY)
 
-            const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    
+    const getCenter = (t1, t2) => ({
+        x: (t1.clientX + t2.clientX) / 2,
+        y: (t1.clientY + t2.clientY) / 2
+    });
+
+    // Convert screen coordinates to world (canvas) coordinates
+    const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
+        x: (screenX - panX) / scale,
+        y: (screenY - panY) / scale
+    });
+
+    // Convert world coordinates back to screen coordinates
+    const worldToScreen = (worldX, worldY, panX, panY, scale) => ({
+        x: worldX * scale + panX,
+        y: worldY * scale + panY
+    });
+
+    stage.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            isGesturing = true;
+            e.preventDefault(); 
             
-            const getCenter = (t1, t2) => ({
-                x: (t1.clientX + t2.clientX) / 2,
-                y: (t1.clientY + t2.clientY) / 2
-            });
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            
+            startDist = getDist(t1, t2);
+            startCenter = getCenter(t1, t2);
+            
+            startScale = DeckForge.state.scale;
+            startPanX = DeckForge.state.panX;
+            startPanY = DeckForge.state.panY;
 
-            stage.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    isGesturing = true;
-                    e.preventDefault(); 
-                    
-                    const t1 = e.touches[0];
-                    const t2 = e.touches[1];
-                    
-                    startDist = getDist(t1, t2);
-                    pinchCenter = getCenter(t1, t2);
-                    
-                    startScale = DeckForge.state.scale;
-                    startPanX = DeckForge.state.panX;
-                    startPanY = DeckForge.state.panY;
-                }
-            }, { passive: false });
+            // CRITICAL: Calculate the world-space point under the pinch center
+            // This point should stay visually anchored throughout the gesture
+            anchorWorld = screenToWorld(
+                startCenter.x, 
+                startCenter.y, 
+                startPanX, 
+                startPanY, 
+                startScale
+            );
+        }
+    }, { passive: false });
 
-            stage.addEventListener('touchmove', (e) => {
-                if (isGesturing && e.touches.length === 2) {
-                    e.preventDefault();
-                    
-                    const t1 = e.touches[0];
-                    const t2 = e.touches[1];
-                    
-                    const curDist = getDist(t1, t2);
-                    const curCenter = getCenter(t1, t2);
-                    
-                    const zoom = curDist / startDist;
-                    let newScale = Math.min(Math.max(startScale * zoom, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
-                    
-                    const dx = curCenter.x - pinchCenter.x;
-                    const dy = curCenter.y - pinchCenter.y;
-                    
-                    // Standard pan-zoom math requires top-left origin
-                    const zsx = (pinchCenter.x - startPanX) * (1 - newScale / startScale);
-                    const zsy = (pinchCenter.y - startPanY) * (1 - newScale / startScale);
-                    
-                    DeckForge.state.panX = startPanX + dx + zsx;
-                    DeckForge.state.panY = startPanY + dy + zsy;
-                    DeckForge.state.scale = newScale;
-                    
-                    requestAnimationFrame(() => this.renderTransform());
-                }
-            }, { passive: false });
+    stage.addEventListener('touchmove', (e) => {
+        if (isGesturing && e.touches.length === 2) {
+            e.preventDefault();
+            
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            
+            const curDist = getDist(t1, t2);
+            const curCenter = getCenter(t1, t2);
+            
+            // Calculate new scale based on pinch distance ratio
+            const zoomRatio = curDist / startDist;
+            let newScale = startScale * zoomRatio;
+            newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
+            
+            // ADOBE-STYLE: Calculate where the anchor point WOULD appear with new scale
+            // Then adjust pan so it appears at the CURRENT pinch center instead
+            const anchorScreen = worldToScreen(
+                anchorWorld.x, 
+                anchorWorld.y, 
+                startPanX, 
+                startPanY, 
+                newScale
+            );
+            
+            // The difference between where anchor would be vs where pinch is now = pan adjustment
+            const newPanX = startPanX + (curCenter.x - anchorScreen.x);
+            const newPanY = startPanY + (curCenter.y - anchorScreen.y);
+            
+            DeckForge.state.panX = newPanX;
+            DeckForge.state.panY = newPanY;
+            DeckForge.state.scale = newScale;
+            
+            requestAnimationFrame(() => this.renderTransform());
+        }
+    }, { passive: false });
 
-            stage.addEventListener('touchend', (e) => {
-                if (e.touches.length < 2) {
-                    isGesturing = false;
-                }
-            });
-        },
+    stage.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            isGesturing = false;
+        }
+    });
+},
 
         setupMouseZoom: function() {
             window.addEventListener('wheel', (opt) => {
