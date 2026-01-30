@@ -167,32 +167,64 @@
 },
 
         setupMouseZoom: function() {
-            window.addEventListener('wheel', (opt) => {
-                if (opt.ctrlKey) {
-                    opt.preventDefault();
-                    let delta = opt.deltaY;
-                    let zoom = DeckForge.state.scale;
-                    zoom *= 0.999 ** delta;
-                    if (zoom > DeckForge.ZOOM_MAX) zoom = DeckForge.ZOOM_MAX;
-                    if (zoom < DeckForge.ZOOM_MIN) zoom = DeckForge.ZOOM_MIN;
-                    
-                    DeckForge.state.scale = zoom;
-                    this.renderTransform();
-                } else if (!opt.target.closest('.overflow-y-auto')) {
-                    DeckForge.state.panX -= opt.deltaX;
-                    DeckForge.state.panY -= opt.deltaY;
-                    this.renderTransform();
-                }
-            }, { passive: false });
-        },
+    // Reuse the coordinate conversion helpers (or define inline)
+    const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
+        x: (screenX - panX) / scale,
+        y: (screenY - panY) / scale
+    });
 
-        setupContextMenu: function() {
-            window.addEventListener('contextmenu', (e) => {
-                if (e.target.tagName === 'CANVAS') {
-                    e.preventDefault();
-                }
-            });
-        },
+    window.addEventListener('wheel', (opt) => {
+        // Detect zoom gesture: ctrl+wheel OR trackpad pinch (ctrlKey is auto-set for pinch)
+        if (opt.ctrlKey) {
+            opt.preventDefault();
+            
+            const oldScale = DeckForge.state.scale;
+            
+            // Normalized zoom factor (Adobe-style)
+            // Using a consistent multiplier rather than 0.999^delta which varies by device
+            const zoomIntensity = 0.002;
+            const zoomDelta = -opt.deltaY * zoomIntensity;
+            let newScale = oldScale * (1 + zoomDelta);
+            
+            // Clamp to zoom limits
+            newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
+            
+            // If scale didn't actually change (hit limits), skip pan recalculation
+            if (newScale === oldScale) return;
+            
+            // ZOOM-TO-CURSOR: Keep the point under the mouse stationary
+            // 1. Get current mouse position (screen coords)
+            const mouseX = opt.clientX;
+            const mouseY = opt.clientY;
+            
+            // 2. Calculate world coordinate under mouse at OLD scale
+            const worldPoint = screenToWorld(
+                mouseX, 
+                mouseY, 
+                DeckForge.state.panX, 
+                DeckForge.state.panY, 
+                oldScale
+            );
+            
+            // 3. Calculate where that world point WOULD be at NEW scale (with current pan)
+            const newScreenX = worldPoint.x * newScale + DeckForge.state.panX;
+            const newScreenY = worldPoint.y * newScale + DeckForge.state.panY;
+            
+            // 4. Adjust pan so the world point stays under the mouse
+            DeckForge.state.panX += mouseX - newScreenX;
+            DeckForge.state.panY += mouseY - newScreenY;
+            DeckForge.state.scale = newScale;
+            
+            this.renderTransform();
+            
+        } else if (!opt.target.closest('.overflow-y-auto')) {
+            // Regular pan (two-finger scroll on trackpad or scroll wheel)
+            DeckForge.state.panX -= opt.deltaX;
+            DeckForge.state.panY -= opt.deltaY;
+            this.renderTransform();
+        }
+    }, { passive: false });
+},
 
         setupInputListeners: function() {
             const bindInput = (id, callback) => {
