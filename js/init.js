@@ -56,9 +56,14 @@
         if (DeckForge.DeckCollection) DeckForge.DeckCollection.init();
         if (DeckForge.RouletteZoom) DeckForge.RouletteZoom.init();
 
-        // 7. Initial view
-        if (DeckForge.UI) DeckForge.UI.resetView();
-        setTimeout(() => DeckForge.UI && DeckForge.UI.resetView(), 500); // mobile address bar correction
+        // 7. Initial view - ensure DOM is ready before calculating dimensions
+        requestAnimationFrame(() => {
+            if (DeckForge.UI) {
+                DeckForge.UI.resetView();
+                // Second call after mobile address bar settles
+                setTimeout(() => DeckForge.UI.resetView(), 500);
+            }
+        });
 
         // 8. Canvas hooks (mask tool)
         const canvas = DeckForge.Canvas.getCanvas();
