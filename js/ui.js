@@ -429,31 +429,6 @@
         }
     }, { passive: false });
 },
-                        renderTransform: function() {
-            const viewport = DeckForge.Utils.getElement('viewport');
-            const zoomLabel = DeckForge.Utils.getElement('zoom-level');
-            
-            // If pan hasn't been initialized yet, do it now
-            if (DeckForge.state.panX === null || DeckForge.state.panY === null) {
-                this.resetView();
-                return;
-            }
-            
-            if (viewport) {
-                viewport.style.transform = `translate(${DeckForge.state.panX}px, ${DeckForge.state.panY}px) scale(${DeckForge.state.scale})`;
-            }
-            
-            if (zoomLabel) {
-                zoomLabel.innerText = Math.round(DeckForge.state.scale * 100) + '%';
-                zoomLabel.style.opacity = '1';
-                
-                if (window.zoomTimer) clearTimeout(window.zoomTimer);
-                window.zoomTimer = setTimeout(() => {
-                    zoomLabel.style.opacity = '0';
-                }, 1000);
-            }
-        },
-
         setupContextMenu: function() {
             // Create the context menu element
             const menu = document.createElement('div');
@@ -654,6 +629,30 @@
                 hide: hideMenu,
                 isVisible: () => menuVisible
             };
+        },
+    renderTransform: function() {
+            const viewport = DeckForge.Utils.getElement('viewport');
+            const zoomLabel = DeckForge.Utils.getElement('zoom-level');
+            
+            // If pan hasn't been initialized yet, do it now
+            if (DeckForge.state.panX === null || DeckForge.state.panY === null) {
+                this.resetView();
+                return;
+            }
+            
+            if (viewport) {
+                viewport.style.transform = `translate(${DeckForge.state.panX}px, ${DeckForge.state.panY}px) scale(${DeckForge.state.scale})`;
+            }
+            
+            if (zoomLabel) {
+                zoomLabel.innerText = Math.round(DeckForge.state.scale * 100) + '%';
+                zoomLabel.style.opacity = '1';
+                
+                if (window.zoomTimer) clearTimeout(window.zoomTimer);
+                window.zoomTimer = setTimeout(() => {
+                    zoomLabel.style.opacity = '0';
+                }, 1000);
+            }
         },
         setupInputListeners: function() {
             const bindInput = (id, callback) => {
