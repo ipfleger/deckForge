@@ -359,3 +359,19 @@ textarea:focus-visible {
     white-space:nowrap;
     border:0;
 } 
+
+/* Context Menu Animation */
+#custom-context-menu {
+    transform-origin: top left;
+    transform: scale(0.95);
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+
+#custom-context-menu.opacity-100 {
+    transform: scale(1);
+}
+
+#custom-context-menu .context-btn:active {
+    background-color: #dbeafe;
+    transform: scale(0.98);
+}
