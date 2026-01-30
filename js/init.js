@@ -14,14 +14,7 @@
              DeckForge.UI.init();
          }
 
-         // 3. Wire image upload to canvas handler
-         const imgUpload = DeckForge.Utils?.getElement('img-upload') || document.getElementById('img-upload');
-         if (imgUpload) {
-             imgUpload.addEventListener('change', (e) => {
-                 DeckForge.Canvas.handleImageUpload(e.target.files[0]);
-                 e.target.value = '';
-             });
-         }
+
 
          // 4. Init managers/tools
          if (DeckForge.Assets?.init) DeckForge.Assets.init();
