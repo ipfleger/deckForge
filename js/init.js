@@ -61,7 +61,7 @@
         setTimeout(() => DeckForge.UI && DeckForge.UI.resetView(), 500); // mobile address bar correction
 
         // 8. Canvas hooks (mask tool)
-        const canvas = DeckForge.getCanvas ? DeckForge.getCanvas() : null;
+        const canvas = DeckForge.Canvas.getCanvas();
         if (canvas && DeckForge.MaskTool) {
             canvas.on('mouse:down', (opt) => {
                 DeckForge.MaskTool.handleTap(opt);

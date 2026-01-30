@@ -291,7 +291,7 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                const canvas = DeckForge.getCanvas ? DeckForge.getCanvas() : null;
+                const canvas = DeckForge.Canvas.getCanvas();
                 if (!canvas) return;
 
                 fabric.Image.fromURL(ev.target.result, (img) => {
