@@ -852,7 +852,8 @@
         <button onclick="DeckForge.Canvas.deleteActive(); DeckForge.UI.hideCtx()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-xs font-bold text-red-600">Delete</button>
     </div>
 
-    <input type="file" id="img-upload" hidden accept="image/*" aria-hidden="true">
+    <input type="file" id="img-upload" hidden accept="image/*" aria-hidden="true"
+       onchange="DeckForge.Canvas.handleImageUpload(this.files[0]); this.value='';">
     <input type="file" id="asset-upload" hidden accept="image/*" aria-hidden="true"
            onchange="DeckForge.Assets.handleUpload(this.files[0]); this.value='';">
 
