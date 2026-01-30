@@ -172,6 +172,8 @@
         x: (screenX - panX) / scale,
         y: (screenY - panY) / scale
     });
+// Optional: Snap to "nice" zoom levels like Adobe (commented out - enable if desired)
+const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5];
 
     window.addEventListener('wheel', (opt) => {
         // Detect zoom gesture: ctrl+wheel OR trackpad pinch (ctrlKey is auto-set for pinch)
@@ -187,7 +189,9 @@
             let newScale = oldScale * (1 + zoomDelta);
             
             // Clamp to zoom limits
-            newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
+            newScale = ZOOM_LEVELS.reduce((prev, curr) => 
+     Math.abs(curr - newScale) < Math.abs(prev - newScale) ? curr : prev
+);
             
             // If scale didn't actually change (hit limits), skip pan recalculation
             if (newScale === oldScale) return;
