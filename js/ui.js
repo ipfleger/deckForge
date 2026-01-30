@@ -450,12 +450,17 @@
             bindInput('inp-blur', (e) => DeckForge.Canvas.applyFilter('blur', e.target.value));
         },
 
-        renderTransform: function() {
+                renderTransform: function() {
             const viewport = DeckForge.Utils.getElement('viewport');
             const zoomLabel = DeckForge.Utils.getElement('zoom-level');
             
+            // If pan hasn't been initialized yet, do it now
+            if (DeckForge.state.panX === null || DeckForge.state.panY === null) {
+                this.resetView();
+                return;
+            }
+            
             if (viewport) {
-                // IMPORTANT: transform-origin MUST be '0 0' (top left) for this translation to work
                 viewport.style.transform = `translate(${DeckForge.state.panX}px, ${DeckForge.state.panY}px) scale(${DeckForge.state.scale})`;
             }
             
