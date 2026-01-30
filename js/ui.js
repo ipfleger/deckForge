@@ -167,41 +167,32 @@
 },
 
         setupMouseZoom: function() {
-    // Reuse the coordinate conversion helpers (or define inline)
     const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
         x: (screenX - panX) / scale,
         y: (screenY - panY) / scale
     });
-// Optional: Snap to "nice" zoom levels like Adobe (commented out - enable if desired)
-const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5];
 
     window.addEventListener('wheel', (opt) => {
-        // Detect zoom gesture: ctrl+wheel OR trackpad pinch (ctrlKey is auto-set for pinch)
         if (opt.ctrlKey) {
             opt.preventDefault();
             
             const oldScale = DeckForge.state.scale;
             
             // Normalized zoom factor (Adobe-style)
-            // Using a consistent multiplier rather than 0.999^delta which varies by device
             const zoomIntensity = 0.002;
             const zoomDelta = -opt.deltaY * zoomIntensity;
             let newScale = oldScale * (1 + zoomDelta);
             
             // Clamp to zoom limits
-            newScale = ZOOM_LEVELS.reduce((prev, curr) => 
-     Math.abs(curr - newScale) < Math.abs(prev - newScale) ? curr : prev
-);
+            newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
             
             // If scale didn't actually change (hit limits), skip pan recalculation
             if (newScale === oldScale) return;
             
             // ZOOM-TO-CURSOR: Keep the point under the mouse stationary
-            // 1. Get current mouse position (screen coords)
             const mouseX = opt.clientX;
             const mouseY = opt.clientY;
             
-            // 2. Calculate world coordinate under mouse at OLD scale
             const worldPoint = screenToWorld(
                 mouseX, 
                 mouseY, 
@@ -210,11 +201,9 @@ const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5]
                 oldScale
             );
             
-            // 3. Calculate where that world point WOULD be at NEW scale (with current pan)
             const newScreenX = worldPoint.x * newScale + DeckForge.state.panX;
             const newScreenY = worldPoint.y * newScale + DeckForge.state.panY;
             
-            // 4. Adjust pan so the world point stays under the mouse
             DeckForge.state.panX += mouseX - newScreenX;
             DeckForge.state.panY += mouseY - newScreenY;
             DeckForge.state.scale = newScale;
@@ -222,7 +211,6 @@ const ZOOM_LEVELS = [0.1, 0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4, 5]
             this.renderTransform();
             
         } else if (!opt.target.closest('.overflow-y-auto')) {
-            // Regular pan (two-finger scroll on trackpad or scroll wheel)
             DeckForge.state.panX -= opt.deltaX;
             DeckForge.state.panY -= opt.deltaY;
             this.renderTransform();
