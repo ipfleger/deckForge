@@ -429,7 +429,207 @@
         }
     }, { passive: false });
 },
+        setupContextMenu: function() {
+            // Create the context menu element
+            const menu = document.createElement('div');
+            menu.id = 'custom-context-menu';
+            menu.className = 'fixed bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-[200] min-w-[180px] opacity-0 pointer-events-none transition-opacity duration-150';
+            menu.innerHTML = `
+                <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Edit</div>
+                <button data-action="cut" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-scissors text-gray-400"></i> Cut
+                    <span class="ml-auto text-[10px] text-gray-400">⌘X</span>
+                </button>
+                <button data-action="copy" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-copy text-gray-400"></i> Copy
+                    <span class="ml-auto text-[10px] text-gray-400">⌘C</span>
+                </button>
+                <button data-action="paste" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-clipboard text-gray-400"></i> Paste
+                    <span class="ml-auto text-[10px] text-gray-400">⌘V</span>
+                </button>
+                <button data-action="duplicate" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-copy-simple text-gray-400"></i> Duplicate
+                    <span class="ml-auto text-[10px] text-gray-400">⌘D</span>
+                </button>
+                <div class="h-px bg-gray-200 my-2"></div>
+                <div class="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wide">Add</div>
+                <button data-action="add-text" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-text-t text-gray-400"></i> Add Text
+                </button>
+                <button data-action="add-image" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-image text-gray-400"></i> Add Image
+                </button>
+                <button data-action="add-shape" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-shapes text-gray-400"></i> Add Shape
+                </button>
+                <button data-action="add-pattern" class="context-btn w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 flex items-center gap-3">
+                    <i class="ph-bold ph-grid-four text-gray-400"></i> Add Pattern
+                </button>
+                <div class="h-px bg-gray-200 my-2"></div>
+                <button data-action="delete" class="context-btn w-full text-left px-4 py-2 hover:bg-red-50 text-sm text-red-600 flex items-center gap-3">
+                    <i class="ph-bold ph-trash text-red-400"></i> Delete
+                    <span class="ml-auto text-[10px] text-red-400">⌫</span>
+                </button>
+            `;
+            document.body.appendChild(menu);
 
+            // Track menu state
+            let menuVisible = false;
+            let menuPosition = { x: 0, y: 0 };
+
+            // Show menu at position
+            const showMenu = (x, y) => {
+                // Adjust position to stay within viewport
+                const menuRect = menu.getBoundingClientRect();
+                const padding = 10;
+                
+                let posX = x;
+                let posY = y;
+                
+                // Prevent menu from going off-screen
+                if (x + 200 > window.innerWidth) posX = window.innerWidth - 200 - padding;
+                if (y + 350 > window.innerHeight) posY = window.innerHeight - 350 - padding;
+                if (posX < padding) posX = padding;
+                if (posY < padding) posY = padding;
+
+                menu.style.left = posX + 'px';
+                menu.style.top = posY + 'px';
+                menu.classList.remove('opacity-0', 'pointer-events-none');
+                menu.classList.add('opacity-100', 'pointer-events-auto');
+                menuVisible = true;
+                menuPosition = { x: posX, y: posY };
+            };
+
+            // Hide menu
+            const hideMenu = () => {
+                menu.classList.add('opacity-0', 'pointer-events-none');
+                menu.classList.remove('opacity-100', 'pointer-events-auto');
+                menuVisible = false;
+            };
+
+            // Handle menu actions
+            menu.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+
+                const action = btn.dataset.action;
+                hideMenu();
+
+                switch (action) {
+                    case 'cut':
+                        if (DeckForge.Clipboard) {
+                            DeckForge.Clipboard.copy();
+                            DeckForge.Canvas.deleteActive();
+                        }
+                        break;
+                    case 'copy':
+                        if (DeckForge.Clipboard) DeckForge.Clipboard.copy();
+                        break;
+                    case 'paste':
+                        if (DeckForge.Clipboard) DeckForge.Clipboard.paste();
+                        break;
+                    case 'duplicate':
+                        if (DeckForge.Clipboard) DeckForge.Clipboard.duplicate();
+                        break;
+                    case 'add-text':
+                        DeckForge.Canvas.addText();
+                        break;
+                    case 'add-image':
+                        DeckForge.Canvas.triggerImageUpload();
+                        break;
+                    case 'add-shape':
+                        DeckForge.UI.openShapesDrawer();
+                        break;
+                    case 'add-pattern':
+                        DeckForge.UI.openShapesDrawer();
+                        // Could auto-select patterns tab if you have one
+                        break;
+                    case 'delete':
+                        DeckForge.Canvas.deleteActive();
+                        break;
+                }
+            });
+
+            // Update menu state based on selection
+            const updateMenuState = () => {
+                const hasSelection = !!DeckForge.canvas?.getActiveObject();
+                const hasCopied = !!DeckForge.Clipboard?._copied;
+
+                // Disable/enable buttons based on context
+                menu.querySelector('[data-action="cut"]').classList.toggle('opacity-30', !hasSelection);
+                menu.querySelector('[data-action="copy"]').classList.toggle('opacity-30', !hasSelection);
+                menu.querySelector('[data-action="paste"]').classList.toggle('opacity-30', !hasCopied);
+                menu.querySelector('[data-action="duplicate"]').classList.toggle('opacity-30', !hasSelection);
+                menu.querySelector('[data-action="delete"]').classList.toggle('opacity-30', !hasSelection);
+            };
+
+            // Desktop: Right-click context menu
+            window.addEventListener('contextmenu', (e) => {
+                const isOnStage = e.target.closest('#stage-container') || e.target.tagName === 'CANVAS';
+                
+                if (isOnStage) {
+                    e.preventDefault();
+                    updateMenuState();
+                    showMenu(e.clientX, e.clientY);
+                }
+            });
+
+            // Mobile: Double-tap detection
+            let lastTap = 0;
+            let lastTapX = 0;
+            let lastTapY = 0;
+            const DOUBLE_TAP_DELAY = 300;
+            const DOUBLE_TAP_DISTANCE = 30;
+
+            const stage = DeckForge.Utils.getElement('stage-container');
+            if (stage) {
+                stage.addEventListener('touchend', (e) => {
+                    const now = Date.now();
+                    const touch = e.changedTouches[0];
+                    
+                    const timeDiff = now - lastTap;
+                    const distX = Math.abs(touch.clientX - lastTapX);
+                    const distY = Math.abs(touch.clientY - lastTapY);
+                    
+                    if (timeDiff < DOUBLE_TAP_DELAY && distX < DOUBLE_TAP_DISTANCE && distY < DOUBLE_TAP_DISTANCE) {
+                        // Double tap detected!
+                        e.preventDefault();
+                        updateMenuState();
+                        showMenu(touch.clientX, touch.clientY);
+                        lastTap = 0; // Reset to prevent triple-tap
+                    } else {
+                        lastTap = now;
+                        lastTapX = touch.clientX;
+                        lastTapY = touch.clientY;
+                    }
+                }, { passive: false });
+            }
+
+            // Hide menu when clicking elsewhere
+            window.addEventListener('click', (e) => {
+                if (menuVisible && !menu.contains(e.target)) {
+                    hideMenu();
+                }
+            });
+
+            // Hide menu on scroll/zoom
+            window.addEventListener('wheel', hideMenu);
+            
+            // Hide menu on escape
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && menuVisible) {
+                    hideMenu();
+                }
+            });
+
+            // Store reference for other modules
+            DeckForge.UI.contextMenu = {
+                show: showMenu,
+                hide: hideMenu,
+                isVisible: () => menuVisible
+            };
+        },
         setupInputListeners: function() {
             const bindInput = (id, callback) => {
                 const el = DeckForge.Utils.getElement(id);
