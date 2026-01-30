@@ -68,13 +68,26 @@
     const stage = DeckForge.Utils.getElement('stage-container');
     if (!stage) return;
 
+    // Gesture state
     let isGesturing = false;
     let startDist = 0;
     let startScale = 1;
     let startPanX = 0;
     let startPanY = 0;
-    let startCenter = { x: 0, y: 0 };  // Screen coords of initial pinch center
-    let anchorWorld = { x: 0, y: 0 };  // World coords under initial pinch (THE KEY)
+    let startCenter = { x: 0, y: 0 };
+    let anchorWorld = { x: 0, y: 0 };
+
+    // Momentum state
+    let velocityX = 0;
+    let velocityY = 0;
+    let lastCenter = { x: 0, y: 0 };
+    let lastTime = 0;
+    let momentumRAF = null;
+    
+    // Momentum config (Adobe-like feel)
+    const FRICTION = 0.92;           // How quickly momentum decays (0.90-0.95 typical)
+    const MIN_VELOCITY = 0.5;        // Stop animating below this speed
+    const VELOCITY_SMOOTHING = 0.3;  // Blend new velocity with old (reduces jitter)
 
     const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
     
@@ -83,87 +96,154 @@
         y: (t1.clientY + t2.clientY) / 2
     });
 
-    // Convert screen coordinates to world (canvas) coordinates
     const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
         x: (screenX - panX) / scale,
         y: (screenY - panY) / scale
     });
 
-    // Convert world coordinates back to screen coordinates
     const worldToScreen = (worldX, worldY, panX, panY, scale) => ({
         x: worldX * scale + panX,
         y: worldY * scale + panY
     });
 
+    // Stop any ongoing momentum animation
+    const stopMomentum = () => {
+        if (momentumRAF) {
+            cancelAnimationFrame(momentumRAF);
+            momentumRAF = null;
+        }
+        velocityX = 0;
+        velocityY = 0;
+    };
+
+    // Momentum animation loop
+    const animateMomentum = () => {
+        // Apply friction
+        velocityX *= FRICTION;
+        velocityY *= FRICTION;
+
+        // Stop if velocity is negligible
+        if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
+            stopMomentum();
+            return;
+        }
+
+        // Apply velocity to pan
+        DeckForge.state.panX += velocityX;
+        DeckForge.state.panY += velocityY;
+        this.renderTransform();
+
+        // Continue animation
+        momentumRAF = requestAnimationFrame(() => animateMomentum());
+    };
+
+    // ==================== TOUCH START ====================
     stage.addEventListener('touchstart', (e) => {
+        // Stop any existing momentum
+        stopMomentum();
+
         if (e.touches.length === 2) {
+            // Two-finger gesture (pinch-zoom)
             isGesturing = true;
-            e.preventDefault(); 
-            
+            e.preventDefault();
+
             const t1 = e.touches[0];
             const t2 = e.touches[1];
-            
+
             startDist = getDist(t1, t2);
             startCenter = getCenter(t1, t2);
-            
+            lastCenter = { ...startCenter };
+            lastTime = performance.now();
+
             startScale = DeckForge.state.scale;
             startPanX = DeckForge.state.panX;
             startPanY = DeckForge.state.panY;
 
-            // CRITICAL: Calculate the world-space point under the pinch center
-            // This point should stay visually anchored throughout the gesture
             anchorWorld = screenToWorld(
-                startCenter.x, 
-                startCenter.y, 
-                startPanX, 
-                startPanY, 
+                startCenter.x,
+                startCenter.y,
+                startPanX,
+                startPanY,
                 startScale
             );
+        } else if (e.touches.length === 1) {
+            // Single-finger pan (only when not on a Fabric object)
+            // Check if we're touching the stage background, not an object
+            const touch = e.touches[0];
+            lastCenter = { x: touch.clientX, y: touch.clientY };
+            lastTime = performance.now();
         }
     }, { passive: false });
 
+    // ==================== TOUCH MOVE ====================
     stage.addEventListener('touchmove', (e) => {
+        const now = performance.now();
+        const dt = now - lastTime;
+
         if (isGesturing && e.touches.length === 2) {
+            // Two-finger pinch-zoom with pan
             e.preventDefault();
-            
+
             const t1 = e.touches[0];
             const t2 = e.touches[1];
-            
+
             const curDist = getDist(t1, t2);
             const curCenter = getCenter(t1, t2);
-            
-            // Calculate new scale based on pinch distance ratio
+
+            // Calculate velocity for momentum (based on center movement)
+            if (dt > 0) {
+                const newVelX = (curCenter.x - lastCenter.x) / dt * 16; // Normalize to ~60fps
+                const newVelY = (curCenter.y - lastCenter.y) / dt * 16;
+                
+                // Smooth velocity to reduce jitter
+                velocityX = velocityX * (1 - VELOCITY_SMOOTHING) + newVelX * VELOCITY_SMOOTHING;
+                velocityY = velocityY * (1 - VELOCITY_SMOOTHING) + newVelY * VELOCITY_SMOOTHING;
+            }
+
+            lastCenter = { ...curCenter };
+            lastTime = now;
+
+            // Calculate new scale
             const zoomRatio = curDist / startDist;
             let newScale = startScale * zoomRatio;
             newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
-            
-            // ADOBE-STYLE: Calculate where the anchor point WOULD appear with new scale
-            // Then adjust pan so it appears at the CURRENT pinch center instead
+
+            // Adobe-style anchor point zoom
             const anchorScreen = worldToScreen(
-                anchorWorld.x, 
-                anchorWorld.y, 
-                startPanX, 
-                startPanY, 
+                anchorWorld.x,
+                anchorWorld.y,
+                startPanX,
+                startPanY,
                 newScale
             );
-            
-            // The difference between where anchor would be vs where pinch is now = pan adjustment
+
             const newPanX = startPanX + (curCenter.x - anchorScreen.x);
             const newPanY = startPanY + (curCenter.y - anchorScreen.y);
-            
+
             DeckForge.state.panX = newPanX;
             DeckForge.state.panY = newPanY;
             DeckForge.state.scale = newScale;
-            
+
             requestAnimationFrame(() => this.renderTransform());
         }
     }, { passive: false });
 
+    // ==================== TOUCH END ====================
     stage.addEventListener('touchend', (e) => {
         if (e.touches.length < 2) {
-            isGesturing = false;
+            if (isGesturing) {
+                isGesturing = false;
+
+                // Start momentum animation if we have velocity
+                if (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY) {
+                    momentumRAF = requestAnimationFrame(() => animateMomentum());
+                }
+            }
         }
     });
+
+    // Cancel momentum if user touches again
+    stage.addEventListener('touchstart', stopMomentum, { passive: true });
 },
 
         setupMouseZoom: function() {
