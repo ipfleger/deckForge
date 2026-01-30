@@ -1,4 +1,6 @@
-// js/canvas.js
+// ========================================
+// CANVAS MODULE & ALIGNMENT TOOLS
+// ========================================
 
 (function() {
     'use strict';
@@ -20,20 +22,22 @@
             fabric.Object.prototype.set({
                 transparentCorners: false,
                 cornerColor: '#2563eb', // Blue
-                cornerStyle: 'circle',  // Round handles are easier to see/touch
+                cornerStyle: 'circle',  // Round handles
                 borderColor: '#2563eb',
                 
                 // Desktop sizes
                 cornerSize: 24,         
-                padding: 15,            // More "breathing room" around the object
+                padding: 15,            // Breathing room
                 borderScaleFactor: 3,   // Thicker selection border
                 
                 // Mobile Touch Area (Invisible hit box around corners)
-                // Increased from 40 to 80 for much easier grabbing
-                touchCornerSize: 80     
+                touchCornerSize: 80,
+                
+                // Allow clicking through transparent parts (critical for overlapping shapes)
+                perPixelTargetFind: true 
             });
 
-            // Allow clicking through transparent parts
+            // Allow clicking through transparent parts of Images & Groups
             fabric.Image.prototype.set({ perPixelTargetFind: true });
             fabric.Group.prototype.set({ perPixelTargetFind: true });
 
@@ -63,12 +67,6 @@
 
             this.loadDefaultTemplate();
         },
-
-        // ... (Keep the rest of your existing functions: onSelect, addShape, etc.) ...
-        
-        // COPY/PASTE the rest of the file from the previous version here
-        // If you need the full file again, let me know, but the only change
-        // is inside the `fabric.Object.prototype.set` block above.
 
         onSelect: function(e) {
             if (!e.selected || e.selected.length === 0) return;
@@ -135,7 +133,34 @@
                 roleStroke: -1
             });
 
-            DeckForge.canvas.add(centerNum);
+            const topLeft = new fabric.IText('3', {
+                left:145,
+                top:145,
+                fontFamily:'Inter',
+                fontSize:100,
+                fontWeight:'bold',
+                fill:DeckForge.state.palette[4],
+                originX:'center',
+                originY:'center',
+                roleFill:4,
+                roleStroke:-1
+            });
+            
+            const btmRight = new fabric.IText('3', {
+                left:DeckForge.CARD_WIDTH - 145,
+                top:DeckForge.CARD_HEIGHT - 145,
+                fontFamily:'Inter',
+                fontSize:100,
+                fontWeight:'bold',
+                fill:DeckForge.state.palette[4],
+                originX:'center',
+                originY:'center',
+                angle:180,
+                roleFill:4,
+                roleStroke:-1
+            });
+
+            DeckForge.canvas.add(centerNum, topLeft, btmRight);
             DeckForge.canvas.requestRenderAll();
             DeckForge.History.save();
         },
@@ -192,6 +217,18 @@
                         }
                         obj = new fabric.Polygon(hexPoints, { ...center });
                         break;
+                    case 'shield':
+                        const shieldPath = "M 0 0 C 0 -20 20 -40 100 -40 C 180 -40 200 -20 200 0 C 200 100 150 180 100 220 C 50 180 0 100 0 0 Z";
+                        obj = new fabric.Path(shieldPath, { ...center });
+                        obj.set({ originX: 'center', originY: 'center' });
+                        if(obj.width > 250) obj.scaleToWidth(250);
+                        break;
+                    case 'diamond':
+                        obj = new fabric.Polygon([
+                            {x: 0, y: -100}, {x: 70, y: 0}, 
+                            {x: 0, y: 100}, {x: -70, y: 0}
+                        ], { ...center });
+                        break;
                     case 'placeholder':
                         const grp = [];
                         const boxSize = 600;
@@ -204,7 +241,6 @@
                         obj = new fabric.Rect({ ...center, width: 250, height: 250 });
                 }
                 
-                // Assign default roles if not manually set above
                 if (obj.roleFill === undefined) {
                     obj.roleFill = 2;
                     obj.roleStroke = -1;
@@ -252,33 +288,32 @@
         },
 
         handleImageUpload: function(file) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        // ✅ get the actual fabric canvas instance
-        const canvas = DeckForge.getCanvas && DeckForge.getCanvas();
-        if (!canvas) return;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const canvas = DeckForge.getCanvas ? DeckForge.getCanvas() : null;
+                if (!canvas) return;
 
-        fabric.Image.fromURL(ev.target.result, (img) => {
-            img.set({
-                left: DeckForge.CARD_WIDTH / 2,
-                top: DeckForge.CARD_HEIGHT / 2,
-                originX: 'center',
-                originY: 'center'
-            });
-            
-            if (img.width > DeckForge.CARD_WIDTH * 0.8) {
-                img.scaleToWidth(DeckForge.CARD_WIDTH * 0.8);
-            }
-            
-            canvas.add(img);
-            canvas.setActiveObject(img);
-            canvas.requestRenderAll();
-            DeckForge.History.save();
-        });
-    };
-    reader.readAsDataURL(file);
-},
+                fabric.Image.fromURL(ev.target.result, (img) => {
+                    img.set({
+                        left: DeckForge.CARD_WIDTH / 2,
+                        top: DeckForge.CARD_HEIGHT / 2,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+                    
+                    if (img.width > DeckForge.CARD_WIDTH * 0.8) {
+                        img.scaleToWidth(DeckForge.CARD_WIDTH * 0.8);
+                    }
+                    
+                    canvas.add(img);
+                    canvas.setActiveObject(img);
+                    canvas.requestRenderAll();
+                    DeckForge.History.save();
+                });
+            };
+            reader.readAsDataURL(file);
+        },
 
         deleteActive: function() {
             const obj = DeckForge.canvas.getActiveObject();
@@ -434,4 +469,86 @@
 
         getCanvas: function() { return DeckForge.canvas; }
     };
+
+    // ========================================
+    // ALIGNMENT MODULE
+    // ========================================
+    DeckForge.Align = {
+        align: function(direction) {
+            const active = DeckForge.canvas.getActiveObject();
+            const selection = DeckForge.canvas.getActiveObjects();
+            
+            if (!active) return;
+            
+            // 1. Single Object Selected -> Align to Canvas
+            if (selection.length === 1) {
+                const obj = selection[0];
+                const bound = obj.getBoundingRect(true); 
+                const canvasW = DeckForge.canvas.width;
+                const canvasH = DeckForge.canvas.height;
+                
+                switch(direction) {
+                    case 'left': obj.set('left', obj.left - bound.left); break;
+                    case 'center': obj.centerH(); break;
+                    case 'right': obj.set('left', canvasW - bound.width + (obj.left - bound.left)); break;
+                    case 'top': obj.set('top', obj.top - bound.top); break;
+                    case 'middle': obj.centerV(); break;
+                    case 'bottom': obj.set('top', canvasH - bound.height + (obj.top - bound.top)); break;
+                }
+                obj.setCoords();
+            } 
+            // 2. Multiple Objects -> Align relative to Selection Box
+            else if (selection.length > 1) {
+                const groupWidth = active.width;
+                const groupHeight = active.height;
+                
+                selection.forEach(obj => {
+                    switch(direction) {
+                        case 'left': obj.set('left', -(groupWidth / 2) + (obj.width * obj.scaleX / 2)); break;
+                        case 'center': obj.set('left', 0); break;
+                        case 'right': obj.set('left', (groupWidth / 2) - (obj.width * obj.scaleX / 2)); break;
+                        case 'top': obj.set('top', -(groupHeight / 2) + (obj.height * obj.scaleY / 2)); break;
+                        case 'middle': obj.set('top', 0); break;
+                        case 'bottom': obj.set('top', (groupHeight / 2) - (obj.height * obj.scaleY / 2)); break;
+                    }
+                    obj.setCoords();
+                });
+                
+                DeckForge.canvas.discardActiveObject();
+                const sel = new fabric.ActiveSelection(selection, { canvas: DeckForge.canvas });
+                DeckForge.canvas.setActiveObject(sel);
+            }
+            
+            DeckForge.canvas.requestRenderAll();
+            DeckForge.History.save();
+        },
+        
+        distribute: function(axis) {
+            const selection = DeckForge.canvas.getActiveObjects();
+            if (selection.length < 3) return;
+            
+            if (axis === 'horizontal') {
+                selection.sort((a, b) => a.left - b.left);
+                const totalW = selection[selection.length - 1].left - selection[0].left;
+                const step = totalW / (selection.length - 1);
+                selection.forEach((obj, i) => {
+                    if (i === 0 || i === selection.length - 1) return;
+                    obj.set('left', selection[0].left + (step * i));
+                    obj.setCoords();
+                });
+            } else {
+                selection.sort((a, b) => a.top - b.top);
+                const totalH = selection[selection.length - 1].top - selection[0].top;
+                const step = totalH / (selection.length - 1);
+                selection.forEach((obj, i) => {
+                    if (i === 0 || i === selection.length - 1) return;
+                    obj.set('top', selection[0].top + (step * i));
+                    obj.setCoords();
+                });
+            }
+            DeckForge.canvas.requestRenderAll();
+            DeckForge.History.save();
+        }
+    };
+
 })();
