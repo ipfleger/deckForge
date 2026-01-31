@@ -114,6 +114,11 @@
                     });
 
                     DeckForge.canvas.add(grouped);
+
+                    // --- ADD THIS LINE ---
+if (DeckForge.Theme) DeckForge.Theme.updateCanvasColors(); 
+// ---------------------
+                    
                     DeckForge.canvas.setActiveObject(grouped);
                     DeckForge.canvas.requestRenderAll();
                     DeckForge.History.save();
