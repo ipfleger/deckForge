@@ -164,7 +164,7 @@
         momentumRAF = requestAnimationFrame(() => animateMomentum());
     };
 
-    // ==================== TOUCH START ====================
+        // ==================== TOUCH START ====================
     stage.addEventListener('touchstart', (e) => {
         stopMomentum();
 
@@ -175,12 +175,8 @@
             isSingleFingerPan = false;
             e.preventDefault();
 
-            // Tell Fabric.js to abort any ongoing interaction
-            if (DeckForge.canvas) {
-                DeckForge.canvas.discardActiveObject();
-                DeckForge.canvas.requestRenderAll();
-            }
-
+            // FIX: Removed discardActiveObject() so selection persists during zoom
+            
             const t1 = e.touches[0];
             const t2 = e.touches[1];
 
@@ -205,15 +201,14 @@
             // ===== SINGLE-FINGER: Check if on object or empty space =====
             const touch = e.touches[0];
             
+            // FIX: Strict check - if touching an object, NEVER pan
             if (isTouchOnObject(touch)) {
-                // Touch is on an object - let Fabric.js handle it
-                // Don't prevent default, don't set any pan flags
                 isGesturing = false;
                 gestureType = null;
                 isSingleFingerPan = false;
+                // Let Fabric handle the object selection/drag
             } else {
                 // Touch is on empty space - prepare for potential pan
-                // (Only activate pan if they actually move, not on tap)
                 isSingleFingerPan = false; // Will be set true on move
                 singleFingerStart = { x: touch.clientX, y: touch.clientY };
                 lastCenter = { x: touch.clientX, y: touch.clientY };
