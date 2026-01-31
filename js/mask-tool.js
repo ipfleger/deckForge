@@ -55,11 +55,22 @@
             DeckForge.UI.minimizeMenu();
         },
 
+        // === NEW FUNCTION ADDED HERE ===
+        handleTap: function(opt) {
+            // Only act if the tool is active (maskRect exists)
+            if (maskRect) {
+                // If user clicked/tapped somewhere that is NOT the crop box
+                if (!opt.target || opt.target !== maskRect) {
+                    this.finish(); // Commit the crop
+                }
+            }
+        },
+        // ===============================
+
         finish: function() {
             if (!targetImage || !maskRect) return;
 
             // 1. Create the clip path based on the rect's relative position
-            // We have to clone it to detach it from the canvas interactions
             maskRect.clone((cloned) => {
                 // FabricJS ClipPath positioning is tricky. 
                 // It needs to be relative to the center of the object being clipped.
