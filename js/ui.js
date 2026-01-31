@@ -64,272 +64,282 @@
             });
         },
 
-        setupGestureHandlers: function() {
-    const stage = DeckForge.Utils.getElement('stage-container');
-    if (!stage) return;
+                setupGestureHandlers: function() {
+            const stage = DeckForge.Utils.getElement('stage-container');
+            if (!stage) return;
 
-    // Gesture state
-    let isGesturing = false;
-    let gestureType = null; // 'pinch' | 'pan' | null
-    let startDist = 0;
-    let startScale = 1;
-    let startPanX = 0;
-    let startPanY = 0;
-    let startCenter = { x: 0, y: 0 };
-    let anchorWorld = { x: 0, y: 0 };
+            // Gesture state
+            let isGesturing = false;
+            let gestureType = null; // 'pinch' | 'pan' | null
+            let startDist = 0;
+            let startScale = 1;
+            let startPanX = 0;
+            let startPanY = 0;
+            let startCenter = { x: 0, y: 0 };
+            let anchorWorld = { x: 0, y: 0 };
 
-    // Single-finger pan state (for empty canvas panning)
-    let isSingleFingerPan = false;
-    let singleFingerStart = { x: 0, y: 0 };
-
-    // Momentum state
-    let velocityX = 0;
-    let velocityY = 0;
-    let lastCenter = { x: 0, y: 0 };
-    let lastTime = 0;
-    let momentumRAF = null;
-
-    // Momentum config
-    const FRICTION = 0.92;
-    const MIN_VELOCITY = 0.5;
-    const VELOCITY_SMOOTHING = 0.3;
-
-    const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-    
-    const getCenter = (t1, t2) => ({
-        x: (t1.clientX + t2.clientX) / 2,
-        y: (t1.clientY + t2.clientY) / 2
-    });
-
-    const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
-        x: (screenX - panX) / scale,
-        y: (screenY - panY) / scale
-    });
-
-    const worldToScreen = (worldX, worldY, panX, panY, scale) => ({
-        x: worldX * scale + panX,
-        y: worldY * scale + panY
-    });
-
-    // Check if a touch point is over a Fabric.js object
-    const isTouchOnObject = (touch) => {
-        const canvas = DeckForge.canvas;
-        if (!canvas) return false;
-
-        // Get the canvas element's bounding rect
-        const canvasEl = canvas.upperCanvasEl;
-        const rect = canvasEl.getBoundingClientRect();
-
-        // Check if touch is even within the canvas bounds
-        if (touch.clientX < rect.left || touch.clientX > rect.right ||
-            touch.clientY < rect.top || touch.clientY > rect.bottom) {
-            return false;
-        }
-
-        // Convert touch to canvas coordinates
-        const canvasX = (touch.clientX - rect.left) / DeckForge.state.scale;
-        const canvasY = (touch.clientY - rect.top) / DeckForge.state.scale;
-
-        // Check if there's an object at this point
-        const target = canvas.findTarget({
-            clientX: touch.clientX,
-            clientY: touch.clientY
-        });
-
-        return !!target;
-    };
-
-    const stopMomentum = () => {
-        if (momentumRAF) {
-            cancelAnimationFrame(momentumRAF);
-            momentumRAF = null;
-        }
-        velocityX = 0;
-        velocityY = 0;
-    };
-
-    const animateMomentum = () => {
-        velocityX *= FRICTION;
-        velocityY *= FRICTION;
-
-        if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
-            stopMomentum();
-            return;
-        }
-
-        DeckForge.state.panX += velocityX;
-        DeckForge.state.panY += velocityY;
-        this.renderTransform();
-
-        momentumRAF = requestAnimationFrame(() => animateMomentum());
-    };
-
-        // ==================== TOUCH START ====================
-    stage.addEventListener('touchstart', (e) => {
-        stopMomentum();
-
-        if (e.touches.length === 2) {
-            // ===== TWO-FINGER: Always pinch-zoom (takes priority) =====
-            isGesturing = true;
-            gestureType = 'pinch';
-            isSingleFingerPan = false;
-            e.preventDefault();
-
-            // FIX: Removed discardActiveObject() so selection persists during zoom
+            // Single-finger pan state
+            let isSingleFingerPan = false;
+            let singleFingerStart = { x: 0, y: 0 };
             
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
+            // CRITICAL FIX: Lock the interaction mode on touchstart
+            // This prevents switching between dragging an object and panning the canvas
+            // while moving your finger.
+            let isObjectInteraction = false;
 
-            startDist = getDist(t1, t2);
-            startCenter = getCenter(t1, t2);
-            lastCenter = { ...startCenter };
-            lastTime = performance.now();
+            // Momentum state
+            let velocityX = 0;
+            let velocityY = 0;
+            let lastCenter = { x: 0, y: 0 };
+            let lastTime = 0;
+            let momentumRAF = null;
 
-            startScale = DeckForge.state.scale;
-            startPanX = DeckForge.state.panX;
-            startPanY = DeckForge.state.panY;
+            // Momentum config
+            const FRICTION = 0.92;
+            const MIN_VELOCITY = 0.5;
+            const VELOCITY_SMOOTHING = 0.3;
 
-            anchorWorld = screenToWorld(
-                startCenter.x,
-                startCenter.y,
-                startPanX,
-                startPanY,
-                startScale
-            );
-
-        } else if (e.touches.length === 1) {
-            // ===== SINGLE-FINGER: Check if on object or empty space =====
-            const touch = e.touches[0];
+            const getDist = (t1, t2) => Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
             
-            // FIX: Strict check - if touching an object, NEVER pan
-            if (isTouchOnObject(touch)) {
-                isGesturing = false;
-                gestureType = null;
-                isSingleFingerPan = false;
-                // Let Fabric handle the object selection/drag
-            } else {
-                // Touch is on empty space - prepare for potential pan
-                isSingleFingerPan = false; // Will be set true on move
-                singleFingerStart = { x: touch.clientX, y: touch.clientY };
-                lastCenter = { x: touch.clientX, y: touch.clientY };
-                lastTime = performance.now();
-                startPanX = DeckForge.state.panX;
-                startPanY = DeckForge.state.panY;
-            }
-        }
-    }, { passive: false });
+            const getCenter = (t1, t2) => ({
+                x: (t1.clientX + t2.clientX) / 2,
+                y: (t1.clientY + t2.clientY) / 2
+            });
 
-    // ==================== TOUCH MOVE ====================
-    stage.addEventListener('touchmove', (e) => {
-        const now = performance.now();
-        const dt = now - lastTime;
+            const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
+                x: (screenX - panX) / scale,
+                y: (screenY - panY) / scale
+            });
 
-        if (e.touches.length === 2 && gestureType === 'pinch') {
-            // ===== TWO-FINGER PINCH-ZOOM =====
-            e.preventDefault();
+            const worldToScreen = (worldX, worldY, panX, panY, scale) => ({
+                x: worldX * scale + panX,
+                y: worldY * scale + panY
+            });
 
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
+            // Check if a touch point is over a Fabric.js object
+            const isTouchOnObject = (touch) => {
+                const canvas = DeckForge.canvas;
+                if (!canvas) return false;
 
-            const curDist = getDist(t1, t2);
-            const curCenter = getCenter(t1, t2);
+                // CRITICAL FIX: Check if Fabric is currently transforming an object
+                // This detects touches on the selection handles (blue box) which findTarget often misses
+                if (canvas._currentTransform) return true;
 
-            // Track velocity
-            if (dt > 0) {
-                const newVelX = (curCenter.x - lastCenter.x) / dt * 16;
-                const newVelY = (curCenter.y - lastCenter.y) / dt * 16;
-                velocityX = velocityX * (1 - VELOCITY_SMOOTHING) + newVelX * VELOCITY_SMOOTHING;
-                velocityY = velocityY * (1 - VELOCITY_SMOOTHING) + newVelY * VELOCITY_SMOOTHING;
-            }
+                // Get the canvas element's bounding rect
+                const canvasEl = canvas.upperCanvasEl;
+                const rect = canvasEl.getBoundingClientRect();
 
-            lastCenter = { ...curCenter };
-            lastTime = now;
-
-            // Calculate new scale
-            const zoomRatio = curDist / startDist;
-            let newScale = startScale * zoomRatio;
-            newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
-
-            // Adobe-style anchor point zoom
-            const anchorScreen = worldToScreen(
-                anchorWorld.x,
-                anchorWorld.y,
-                startPanX,
-                startPanY,
-                newScale
-            );
-
-            const newPanX = startPanX + (curCenter.x - anchorScreen.x);
-            const newPanY = startPanY + (curCenter.y - anchorScreen.y);
-
-            DeckForge.state.panX = newPanX;
-            DeckForge.state.panY = newPanY;
-            DeckForge.state.scale = newScale;
-
-            requestAnimationFrame(() => this.renderTransform());
-
-        } else if (e.touches.length === 1 && !isTouchOnObject(e.touches[0])) {
-            // ===== SINGLE-FINGER PAN (on empty space) =====
-            const touch = e.touches[0];
-            const dx = touch.clientX - singleFingerStart.x;
-            const dy = touch.clientY - singleFingerStart.y;
-
-            // Only start panning if moved more than 10px (prevents accidental pan on tap)
-            if (!isSingleFingerPan && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
-                isSingleFingerPan = true;
-                e.preventDefault();
-            }
-
-            if (isSingleFingerPan) {
-                e.preventDefault();
-
-                // Track velocity
-                if (dt > 0) {
-                    const newVelX = (touch.clientX - lastCenter.x) / dt * 16;
-                    const newVelY = (touch.clientY - lastCenter.y) / dt * 16;
-                    velocityX = velocityX * (1 - VELOCITY_SMOOTHING) + newVelX * VELOCITY_SMOOTHING;
-                    velocityY = velocityY * (1 - VELOCITY_SMOOTHING) + newVelY * VELOCITY_SMOOTHING;
+                // Check if touch is even within the canvas bounds
+                if (touch.clientX < rect.left || touch.clientX > rect.right ||
+                    touch.clientY < rect.top || touch.clientY > rect.bottom) {
+                    return false;
                 }
 
-                lastCenter = { x: touch.clientX, y: touch.clientY };
-                lastTime = now;
+                // Check if there's an object at this point
+                const target = canvas.findTarget({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
 
-                DeckForge.state.panX = startPanX + dx;
-                DeckForge.state.panY = startPanY + dy;
+                return !!target;
+            };
 
-                requestAnimationFrame(() => this.renderTransform());
-            }
-        }
-    }, { passive: false });
+            const stopMomentum = () => {
+                if (momentumRAF) {
+                    cancelAnimationFrame(momentumRAF);
+                    momentumRAF = null;
+                }
+                velocityX = 0;
+                velocityY = 0;
+            };
 
-    // ==================== TOUCH END ====================
-    stage.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2 && gestureType === 'pinch') {
-            // Ended pinch-zoom
-            gestureType = null;
-            isGesturing = false;
+            const animateMomentum = () => {
+                velocityX *= FRICTION;
+                velocityY *= FRICTION;
 
-            // Start momentum if we have velocity
-            if (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY) {
+                if (Math.abs(velocityX) < MIN_VELOCITY && Math.abs(velocityY) < MIN_VELOCITY) {
+                    stopMomentum();
+                    return;
+                }
+
+                DeckForge.state.panX += velocityX;
+                DeckForge.state.panY += velocityY;
+                this.renderTransform();
+
                 momentumRAF = requestAnimationFrame(() => animateMomentum());
-            }
-        }
+            };
 
-        if (e.touches.length === 0 && isSingleFingerPan) {
-            // Ended single-finger pan
-            isSingleFingerPan = false;
+            // ==================== TOUCH START ====================
+            stage.addEventListener('touchstart', (e) => {
+                stopMomentum();
 
-            // Start momentum
-            if (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY) {
-                momentumRAF = requestAnimationFrame(() => animateMomentum());
-            }
-        }
-    });
+                if (e.touches.length === 2) {
+                    // ===== TWO-FINGER: Always pinch-zoom =====
+                    isGesturing = true;
+                    gestureType = 'pinch';
+                    isSingleFingerPan = false;
+                    isObjectInteraction = false;
+                    e.preventDefault();
 
-    // Cancel momentum on any new touch
-    stage.addEventListener('touchstart', stopMomentum, { passive: true });
-},
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
 
+                    startDist = getDist(t1, t2);
+                    startCenter = getCenter(t1, t2);
+                    lastCenter = { ...startCenter };
+                    lastTime = performance.now();
+
+                    startScale = DeckForge.state.scale;
+                    startPanX = DeckForge.state.panX;
+                    startPanY = DeckForge.state.panY;
+
+                    anchorWorld = screenToWorld(
+                        startCenter.x,
+                        startCenter.y,
+                        startPanX,
+                        startPanY,
+                        startScale
+                    );
+
+                } else if (e.touches.length === 1) {
+                    // ===== SINGLE-FINGER: Decide ONCE if object or pan =====
+                    const touch = e.touches[0];
+                    
+                    if (isTouchOnObject(touch)) {
+                        // We are interacting with an object.
+                        // LOCK this state so we don't accidentally pan if we slip off.
+                        isObjectInteraction = true;
+                        isSingleFingerPan = false;
+                        isGesturing = false;
+                        gestureType = null;
+                        // Let Fabric handle the event
+                    } else {
+                        // We are hitting empty space. Prepare to pan.
+                        isObjectInteraction = false;
+                        isSingleFingerPan = false; // Will be set true on move
+                        singleFingerStart = { x: touch.clientX, y: touch.clientY };
+                        lastCenter = { x: touch.clientX, y: touch.clientY };
+                        lastTime = performance.now();
+                        startPanX = DeckForge.state.panX;
+                        startPanY = DeckForge.state.panY;
+                    }
+                }
+            }, { passive: false });
+
+            // ==================== TOUCH MOVE ====================
+            stage.addEventListener('touchmove', (e) => {
+                const now = performance.now();
+                const dt = now - lastTime;
+
+                if (e.touches.length === 2 && gestureType === 'pinch') {
+                    // ===== TWO-FINGER PINCH-ZOOM =====
+                    e.preventDefault();
+
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+
+                    const curDist = getDist(t1, t2);
+                    const curCenter = getCenter(t1, t2);
+
+                    // Track velocity
+                    if (dt > 0) {
+                        const newVelX = (curCenter.x - lastCenter.x) / dt * 16;
+                        const newVelY = (curCenter.y - lastCenter.y) / dt * 16;
+                        velocityX = velocityX * (1 - VELOCITY_SMOOTHING) + newVelX * VELOCITY_SMOOTHING;
+                        velocityY = velocityY * (1 - VELOCITY_SMOOTHING) + newVelY * VELOCITY_SMOOTHING;
+                    }
+
+                    lastCenter = { ...curCenter };
+                    lastTime = now;
+
+                    const zoomRatio = curDist / startDist;
+                    let newScale = startScale * zoomRatio;
+                    newScale = Math.min(Math.max(newScale, DeckForge.ZOOM_MIN), DeckForge.ZOOM_MAX);
+
+                    const anchorScreen = worldToScreen(
+                        anchorWorld.x,
+                        anchorWorld.y,
+                        startPanX,
+                        startPanY,
+                        newScale
+                    );
+
+                    const newPanX = startPanX + (curCenter.x - anchorScreen.x);
+                    const newPanY = startPanY + (curCenter.y - anchorScreen.y);
+
+                    DeckForge.state.panX = newPanX;
+                    DeckForge.state.panY = newPanY;
+                    DeckForge.state.scale = newScale;
+
+                    requestAnimationFrame(() => this.renderTransform());
+
+                } else if (e.touches.length === 1) {
+                    // ===== SINGLE-FINGER HANDLING =====
+                    
+                    // If we determined this was an object interaction at start,
+                    // DO NOT allow panning. Just return and let Fabric handle it.
+                    if (isObjectInteraction) {
+                        return; 
+                    }
+
+                    // Otherwise, we are in panning mode
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - singleFingerStart.x;
+                    const dy = touch.clientY - singleFingerStart.y;
+
+                    // Only start panning if moved more than 10px (prevents accidental pan on tap)
+                    if (!isSingleFingerPan && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+                        isSingleFingerPan = true;
+                        e.preventDefault();
+                    }
+
+                    if (isSingleFingerPan) {
+                        e.preventDefault();
+
+                        if (dt > 0) {
+                            const newVelX = (touch.clientX - lastCenter.x) / dt * 16;
+                            const newVelY = (touch.clientY - lastCenter.y) / dt * 16;
+                            velocityX = velocityX * (1 - VELOCITY_SMOOTHING) + newVelX * VELOCITY_SMOOTHING;
+                            velocityY = velocityY * (1 - VELOCITY_SMOOTHING) + newVelY * VELOCITY_SMOOTHING;
+                        }
+
+                        lastCenter = { x: touch.clientX, y: touch.clientY };
+                        lastTime = now;
+
+                        DeckForge.state.panX = startPanX + dx;
+                        DeckForge.state.panY = startPanY + dy;
+
+                        requestAnimationFrame(() => this.renderTransform());
+                    }
+                }
+            }, { passive: false });
+
+            // ==================== TOUCH END ====================
+            stage.addEventListener('touchend', (e) => {
+                if (e.touches.length < 2 && gestureType === 'pinch') {
+                    gestureType = null;
+                    isGesturing = false;
+
+                    if (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY) {
+                        momentumRAF = requestAnimationFrame(() => animateMomentum());
+                    }
+                }
+
+                if (e.touches.length === 0) {
+                    if (isSingleFingerPan) {
+                        isSingleFingerPan = false;
+                        if (Math.abs(velocityX) > MIN_VELOCITY || Math.abs(velocityY) > MIN_VELOCITY) {
+                            momentumRAF = requestAnimationFrame(() => animateMomentum());
+                        }
+                    }
+                    // Reset interaction lock
+                    isObjectInteraction = false;
+                }
+            });
+
+            // Cancel momentum on any new touch
+            stage.addEventListener('touchstart', stopMomentum, { passive: true });
+        },
         setupMouseZoom: function() {
     const screenToWorld = (screenX, screenY, panX, panY, scale) => ({
         x: (screenX - panX) / scale,
