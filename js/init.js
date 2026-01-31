@@ -77,10 +77,16 @@
         if (DeckForge.Shortcuts) {
             DeckForge.Shortcuts.init();
         }
+// 11. Smart Window Resize Handler
+        let lastWidth = window.innerWidth;
 
-        // 11. Window resize handler
         window.addEventListener('resize', DeckForge.Utils.debounce(() => {
-            DeckForge.UI?.resetView?.();
+            const newWidth = window.innerWidth;
+            // Only trigger if width changed significantly (>1px)
+            if (Math.abs(newWidth - lastWidth) > 1) {
+                DeckForge.UI?.resetView?.();
+                lastWidth = newWidth;
+            }
         }, 250));
 
         console.log("DeckForge Ready.");
