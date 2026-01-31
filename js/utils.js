@@ -55,11 +55,16 @@
             }
         },
 
-        getPaletteColor: function(idx) {
-            if (idx === -1) return 'transparent';
-            const effectiveIdx = DeckForge.state.darkMode ? (4 - idx) : idx;
-            return DeckForge.state.palette[effectiveIdx] || DeckForge.state.palette[0];
-        },
+        // Fixed Code
+getPaletteColor: function(idx) {
+    if (idx === -1) return 'transparent';
+    
+    // Dynamically calculate the flip based on palette length (usually 8)
+    const len = DeckForge.state.palette.length;
+    const effectiveIdx = DeckForge.state.darkMode ? (len - 1 - idx) : idx;
+    
+    return DeckForge.state.palette[effectiveIdx] || DeckForge.state.palette[0];
+},
 
         showOverlay: function() {
             const overlay = this.getElement('overlay');
