@@ -329,6 +329,7 @@
                 const fabricObj = gen.generate(values);
                 fabricObj.set({ selectable: true, evented: true });
                 DeckForge.canvas.add(fabricObj);
+                if (DeckForge.Theme) DeckForge.Theme.updateCanvasColors();
                 DeckForge.canvas.setActiveObject(fabricObj);
                 DeckForge.canvas.requestRenderAll();
                 DeckForge.History.save();
