@@ -1,3 +1,12 @@
+DeckForge.Textures = {
+    none: null,
+    // Ensure these file paths exist in your project folder!
+    paper: 'assets/textures/paper_grain.png',
+    canvas: 'assets/textures/canvas_weave.png',
+    grunge: 'assets/textures/grunge_overlay.png'
+};
+// ---------------------------------------
+
 // ========================================
 // ASSET LIBRARY (persistent, localforage)
 // ========================================
