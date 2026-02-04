@@ -65,6 +65,64 @@ getPaletteColor: function(idx) {
     
     return DeckForge.state.palette[effectiveIdx] || DeckForge.state.palette[0];
 },
+        applyTextureToActiveObject: function(textureKey) {
+    const obj = DeckForge.canvas.getActiveObject();
+    if (!obj) return;
+
+    // 1. Determine the Texture URL
+    // First, check our hardcoded presets (Paper, Canvas, etc.)
+    let textureUrl = DeckForge.Textures[textureKey];
+
+    // Second, if not found, check the User's Asset Library
+    if (!textureUrl && DeckForge.Assets && DeckForge.Assets.items) {
+        const asset = DeckForge.Assets.items.find(a => a.id === textureKey);
+        if (asset) {
+            textureUrl = asset.dataUrl; // Use the uploaded image data
+        }
+    }
+
+    // 2. Case: Remove Texture (Solid Color)
+    if (!textureUrl || textureKey === 'none') {
+        if (obj.originalColor) {
+            obj.set('fill', obj.originalColor);
+            delete obj.originalColor; // Cleanup
+        }
+        DeckForge.canvas.requestRenderAll();
+        return;
+    }
+
+    // 3. Case: Apply Texture (Blend Mode)
+    fabric.util.loadImage(textureUrl, function(img) {
+        // Save the current solid color so we can revert or blend later
+        if (typeof obj.fill === 'string') {
+            obj.originalColor = obj.fill;
+        }
+
+        // Create a temporary canvas to blend Color + Texture
+        const patternSourceCanvas = document.createElement('canvas');
+        patternSourceCanvas.width = img.width;
+        patternSourceCanvas.height = img.height;
+        const ctx = patternSourceCanvas.getContext('2d');
+
+        // Layer 1: The Object's Color
+        ctx.fillStyle = obj.originalColor || '#ffffff';
+        ctx.fillRect(0, 0, img.width, img.height);
+
+        // Layer 2: The Texture Image (Multiplied)
+        // 'multiply' makes white transparent and dark pixels tint the color below
+        ctx.globalCompositeOperation = 'multiply'; 
+        ctx.drawImage(img, 0, 0);
+
+        // Create the Pattern
+        const pattern = new fabric.Pattern({
+            source: patternSourceCanvas,
+            repeat: 'repeat' 
+        });
+
+        obj.set('fill', pattern);
+        DeckForge.canvas.requestRenderAll();
+    });
+},
 
         showOverlay: function() {
             const overlay = this.getElement('overlay');
