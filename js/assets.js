@@ -2,8 +2,9 @@ DeckForge.Textures = {
     none: null,
     // Ensure these file paths exist in your project folder!
     paper: 'assets/textures/paper_grain.png',
-    canvas: 'assets/textures/canvas_weave.png',
-    grunge: 'assets/textures/grunge_overlay.png'
+    paper_dark: 'assets/textures/paper_grain.png',
+    linen: 'assets/textures/linen_texture.png',
+    halftone: 'assets/textures/halftone_texture.png'
 };
 // ---------------------------------------
 
