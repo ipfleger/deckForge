@@ -19,6 +19,7 @@
             this.setupDragHandle();
             this.setupGestureHandlers();
             this.setupInputListeners();
+            this.setupTextureControl();
             this.setupMouseZoom();
             this.setupContextMenu();
         },
@@ -678,6 +679,82 @@
             bindInput('inp-pixelate', (e) => DeckForge.Canvas.applyFilter('pixelate', e.target.value));
             bindInput('inp-blur', (e) => DeckForge.Canvas.applyFilter('blur', e.target.value));
         },
+        //
+
+setupTextureControl: function() {
+    // 1. Find the container where Blend Mode lives (tab-fx)
+    const fxTab = document.getElementById('tab-fx');
+    const blendBtn = document.getElementById('btn-blend');
+    
+    if (!fxTab || !blendBtn) return;
+
+    // 2. Create the wrapper for our new Texture UI
+    const container = document.createElement('div');
+    container.className = "flex flex-col gap-2 mt-4 pt-4 border-t border-gray-100";
+    
+    // 3. Create Label
+    const labelHeader = document.createElement('div');
+    labelHeader.className = "flex justify-between text-[10px] text-gray-500 font-bold uppercase tracking-wide";
+    labelHeader.innerHTML = `<span>Texture</span><span id="lbl-texture" class="text-blue-600">None</span>`;
+    
+    // 4. Create Dropdown
+    const select = document.createElement('select');
+    select.className = "w-full text-xs p-2 rounded-lg border border-gray-200 bg-gray-50 font-bold text-gray-700 outline-none focus:border-blue-500";
+    
+    // Default Option
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = 'none';
+    defaultOpt.innerText = 'None';
+    select.appendChild(defaultOpt);
+
+    // Add Presets
+    if (DeckForge.Textures) {
+        const group = document.createElement('optgroup');
+        group.label = "Presets";
+        Object.keys(DeckForge.Textures).forEach(key => {
+            if(key === 'none') return;
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.innerText = key.charAt(0).toUpperCase() + key.slice(1);
+            group.appendChild(opt);
+        });
+        select.appendChild(group);
+    }
+
+    // Add User Assets
+    if (DeckForge.Assets && DeckForge.Assets.items.length > 0) {
+        const group = document.createElement('optgroup');
+        group.label = "My Assets";
+        DeckForge.Assets.items.forEach(asset => {
+            const opt = document.createElement('option');
+            opt.value = asset.id;
+            opt.innerText = asset.name;
+            group.appendChild(opt);
+        });
+        select.appendChild(group);
+    }
+
+    // 5. Event Listener
+    select.addEventListener('change', (e) => {
+        const val = e.target.value;
+        const label = document.getElementById('lbl-texture');
+        if(label) label.innerText = e.target.options[e.target.selectedIndex].text;
+        
+        // Call the utility we created earlier
+        if(DeckForge.Utils.applyTextureToActiveObject) {
+            DeckForge.Utils.applyTextureToActiveObject(val);
+            DeckForge.History.save();
+        }
+    });
+
+    // 6. Append to UI
+    container.appendChild(labelHeader);
+    container.appendChild(select);
+    
+    // Insert it after the Blend Mode button's container
+    // The blend button is inside a grid div, so we append after that grid div
+    blendBtn.parentElement.after(container);
+},
                 resetView: function() {
             // Use window dimensions directly for mobile safety
             const w = window.innerWidth;
